@@ -1,4 +1,6 @@
 # TriviaRoulette
+![Trivia Roulette picture](images/image3.jpg)
+
 _03.01.2019_
 
 Jake Matray
@@ -17,7 +19,7 @@ As developers, this application is not only an opportunity to show off our skill
 
 ## Architecture
 
-![alt text](images/image1.jpg)
+![architecture diagram](images/image1.jpg)
 
 ## User Stories
 
@@ -33,6 +35,8 @@ As developers, this application is not only an opportunity to show off our skill
 
 
 ## Schemas
+
+![database structure](images/image4.jpg)
 
 ## Endpoints 
 The trivia microservice will handle the state of the game. The state will include a list of questions to ask and the users currently in the game. The service will generate a set of questions to ask users based on the API we are pulling from. After each question is answered by users in the alloted time those that didn’t answer correctly will be removed from the game. 
