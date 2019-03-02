@@ -1,5 +1,5 @@
 # TriviaRoulette
-![Trivia Roulette picture](images/image3.jpg)
+![Trivia Roulette picture](images/image3.png)
 
 _03.01.2019_
 
