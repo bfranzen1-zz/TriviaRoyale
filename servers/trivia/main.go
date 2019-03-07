@@ -1,11 +1,11 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/TriviaRoulette/servers/summary/handlers"
 )
 
 //main is the main entry point for the server
@@ -15,9 +15,22 @@ func main() {
 		addr = ":80"
 	}
 
+	// access to user store
+	dsn := os.Getenv("DSN")
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		fmt.Printf("error opening database: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println(db)
+
+	// context here
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/summary", handlers.SummaryHandler)
 
 	log.Printf("Server is listening at http:/{container_name}/%s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }
+
+// need method to get questions from trivia api
+// define num of questions we want to get???

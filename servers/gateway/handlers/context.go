@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"github.com/bfranzen1/assignments-bfranzen1/servers/gateway/indexes"
-	"github.com/bfranzen1/assignments-bfranzen1/servers/gateway/models/users"
-	"github.com/bfranzen1/assignments-bfranzen1/servers/gateway/sessions"
+	"github.com/TriviaRoulette/servers/gateway/indexes"
+	"github.com/TriviaRoulette/servers/gateway/models/users"
+	"github.com/TriviaRoulette/servers/gateway/sessions"
 )
 
 // HandlerContext is a receiver that stores

@@ -14,7 +14,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bfranzen1/assignments-bfranzen1/servers/gateway/sessions"
+	"github.com/TriviaRoulette/servers/gateway/sessions"
 	"github.com/gorilla/websocket"
 	"github.com/streadway/amqp"
 	"net/http"

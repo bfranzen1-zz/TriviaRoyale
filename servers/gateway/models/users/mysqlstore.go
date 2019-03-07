@@ -3,7 +3,7 @@ package users
 import (
 	"database/sql"
 	"errors"
-	"github.com/bfranzen1/assignments-bfranzen1/servers/gateway/indexes"
+	"github.com/TriviaRoulette/servers/gateway/indexes"
 	_ "github.com/go-sql-driver/mysql"
 	"strconv"
 	"strings"
