@@ -1,0 +1,11 @@
+{
+    "python.linting.pylintArgs": [
+        "--load-plugins",
+        "pylint-flask"
+    ],
+    "python.pythonPath": "C:\\Users\\bef68.WINDOWS-9IMIDVQ\\AppData\\Local\\Programs\\Python\\Python37\\python.exe",
+    "cSpell.words": [
+        "msgs",
+        "unmarshaling"
+    ]
+}
