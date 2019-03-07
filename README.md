@@ -8,7 +8,7 @@ Jake Matray
 Blake Franzen
 
 ## Overview
-Trivia Roulette is an application that lets users play trivia games with others in a format similar to popular battle royale games. 
+Trivia Roulette is an application that lets users play trivia games with others in a format similar to popular [battle royale](https://en.wikipedia.org/wiki/Battle_royal) games. 
 
 ## Who?
 The specific target audience for this project are those that heavily enjoy trivia games, who are also looking to both show off and advance their knowledge in specific areas. We envision that those who want to put their knowledge to the test by competing against others in a fast-paced and challenging setting would be the ones most likely to use our application.
