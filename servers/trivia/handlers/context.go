@@ -1,8 +1,11 @@
 package handlers
 
 import (
-	"github.com/gorilla/websocket"
-	"sync"
+	"github.com/TriviaRoulette/servers/gateway/models/users"
+	"github.com/TriviaRoulette/servers/trivia/db"
+	"github.com/TriviaRoulette/servers/trivia/models"
+	//"github.com/gorilla/websocket"
+	//"sync"
 )
 
 type TriviaContext struct {
@@ -19,10 +22,11 @@ type TriviaContext struct {
 		- all user connections
 	*/
 
-	UserConnections *SocketStore
-}
+	Mongo db.MongoStore
 
-type SocketStore struct {
-	Connections map[int64]*websocket.Conn
-	lock        sync.Mutex
+	Users users.Store
+
+	Lobbies []*models.Lobby
+
+	UserConnections *SocketStore
 }

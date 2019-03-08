@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/TriviaRoulette/servers/trivia/handlers"
 	"log"
 	"net/http"
 	"os"
@@ -16,6 +17,7 @@ func main() {
 	}
 
 	// access to user store
+	// TODO: connect to context
 	dsn := os.Getenv("DSN")
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -24,9 +26,15 @@ func main() {
 	}
 	fmt.Println(db)
 
-	// context here
+	// TODO: initialize mongostore
+	// TODO: connect to queue
+	// TODO: initialize socketstore
+	// TODO: initialize lobbies
+	// TODO: need context
 
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("/v1/trivia", handlers.PlayerConnectionHandler)
 
 	log.Printf("Server is listening at http:/{container_name}/%s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))

@@ -14,3 +14,12 @@ package handlers
 		- results
 	- remove lobby from context
 */
+
+func StartGame() {
+	// TODO: start go routine for specific lobby questions
+}
+
+func SaveResults() {
+	// TODO: save results of game in mongo store
+	// remove lobby from context
+}
