@@ -208,5 +208,6 @@ func (s *SocketStore) Read(events <-chan amqp.Delivery) {
 			break
 		}
 		s.WriteToValidConnections(event.UserIDs, TextMessage, e.Body)
+
 	}
 }

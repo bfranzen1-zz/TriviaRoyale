@@ -9,6 +9,7 @@ type Question struct {
 	Question string   `json:"question"`
 	Choices  []string `json:"choices"`
 	Answer   string   `json:"-"` // don't want user to see this
+
 }
 
 type Answer struct {
