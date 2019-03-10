@@ -1,17 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css"
+        integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="../src/styles.css">
-    <title>Document</title>
+    <title>Trivia Roullette</title>
 </head>
+
 <body>
     <h1 class="tr-title">Trivia Roullette</h1>
 
-    <div class="lobby">
-        <p>Name</p>
+
+    <div class="landing">
+
+        <div class="stats">
+            <div class="stat-t-holder">
+                <h2 class="stat-title">Your Stats</h2>
+            </div>
+            
+        </div>
+
+        <div class="lobbies">
+            <button class="new-lobby button button-block">Create Game</button>
+    
+        </div>
+        <div class="chat">
+            <div class="chat-t-holder">
+                <h2 class="chat-title">Lobby Chat</h2>
+            </div>
+        </div>
     </div>
+
+    <div class="game">
+        <div class="board">
+            <div class="waiting">
+                <div class="options">
+                    <div class="form-group">
+                        <label class="option-lab" for="sel1">Category:</label>
+                        <select name="category" class="form-control" id="category">
+                            <option value="foo">Foo</option>
+                            <option value="bar">Bar</option>
+                            <option value="baz">Baz</option>
+                            <option value="lmao">Lmao</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="option-lab" for="sel1">Difficulty:</label>
+                        <select name="difficulty" class="form-control" id="difficulty">
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+                            <option>4</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="option-lab" for="sel1">Max Players:</label>
+                        <select name="players" class="form-control" id="players">
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+                            <option>4</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="icon-holder">
+                    <i class="p-icon fas fa-user-circle fa-3x"></i>
+                    <span class="num-players">10</span>
+                </div>
+                <div class="glowing-holder">
+                    <h3 class="glowing">Waiting for more players</h3>
+                    <button class="start-game">Start Game</button>
+                </div>
+
+
+            </div>
+
+            <div class="playing">
+                <div class="leave-holder">
+                    <button class="leave-game button">Leave Game</button>
+                </div>
+
+                <div class="icon-holder">
+                    <i class="p-icon fas fa-user-circle fa-3x"></i>
+                    <span class="num-players">10</span>
+                </div>
+
+                <div class="question">
+                    <p class="question-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+                        sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                        Pretium nibh ipsum consequat nisl vel pretium lectus quam id.</p>
+                </div>
+
+                <div class="icon-holder">
+                    <i class="t-icon fas fa-clock fa-3x"></i>
+                    <span class="timer">10</span>
+                </div>
+                <div class="answers">
+                    <button class="answer button button-block">Answer 1</button>
+                    <button class="answer button button-block">Answer 2</button>
+                    <button class="answer button button-block">Answer 3</button>
+                    <button class="answer button button-block">Answer 4</button>
+                </div>
+
+
+            </div>
+
+        </div>
+        <div class="chat">
+            <div class="chat-t-holder">
+                <h2 class="chat-title">Game Chat</h2>
+            </div>
+        </div>
+    </div>
+
+    <script src="../src/index.js"></script>
 </body>
+
 </html>

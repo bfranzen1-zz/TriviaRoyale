@@ -40,3 +40,10 @@ $('.tab a').on('click', function (e) {
     $(target).fadeIn(600);
 
 });
+
+// Logic to send new user or returning user data to server
+
+$('#submit-new-user').on('click', function() {
+    var newUserData = JSON.stringify($("#new-user-form").serializeArray());
+    console.log(newUserData);
+});
