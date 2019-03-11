@@ -1,25 +1,29 @@
 package handlers
 
-//TODO: start a goroutine that connects to the RabbitMQ server,
-//reads events off the queue, and broadcasts them to all of
-//the existing WebSocket connections that should hear about
-//that event. If you get an error writing to the WebSocket,
-//just close it and remove it from the list
-//(client went away without closing from
-//their end). Also make sure you start a read pump that
-//reads incoming control messages, as described in the
-//Gorilla WebSocket API documentation:
-//http://godoc.org/github.com/gorilla/websocket
-
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/TriviaRoulette/servers/trivia/models"
+	"github.com/TriviaRoulette/servers/trivia/models/users"
 	"github.com/gorilla/websocket"
 	"github.com/streadway/amqp"
 	"net/http"
 	"strings"
 	"sync"
+)
+
+// Control messages for websocket
+const (
+	// TextMessage denotes a text data message. The text message payload is
+	// interpreted as UTF-8 encoded text data.
+	TextMessage = 1
+
+	// CloseMessage denotes a close control message. The optional message
+	// payload contains a numeric code and text. Use the FormatCloseMessage
+	// function to format a close message payload.
+	CloseMessage = 8
+
+	// name of rabbitmq queue to use for services
+	qName = "api"
 )
 
 // SocketStore contains client connection information
@@ -35,32 +39,6 @@ type SocketStore struct {
 func NewSocketStore() *SocketStore {
 	return &SocketStore{Connections: map[int64]*websocket.Conn{}}
 }
-
-// Control messages for websocket
-const (
-	// TextMessage denotes a text data message. The text message payload is
-	// interpreted as UTF-8 encoded text data.
-	TextMessage = 1
-
-	// BinaryMessage denotes a binary data message.
-	BinaryMessage = 2
-
-	// CloseMessage denotes a close control message. The optional message
-	// payload contains a numeric code and text. Use the FormatCloseMessage
-	// function to format a close message payload.
-	CloseMessage = 8
-
-	// PingMessage denotes a ping control message. The optional message payload
-	// is UTF-8 encoded text.
-	PingMessage = 9
-
-	// PongMessage denotes a pong control message. The optional message payload
-	// is UTF-8 encoded text.
-	PongMessage = 10
-
-	// name of rabbitmq queue to use for games
-	qName = "trivia"
-)
 
 // InsertConnection is a Thread-safe method for inserting a connection
 func (s *SocketStore) InsertConnection(id int64, conn *websocket.Conn) {
@@ -104,7 +82,8 @@ func (s *SocketStore) WriteToValidConnections(playerIDs []int64, messageType int
 	return nil
 }
 
-// Message is a struct to read our message into
+// Message is a struct that represents a message
+// sent by the microservice of the same name
 type Message struct {
 	Type      string                 `json:"type"`
 	Channel   map[string]interface{} `json:"channel,omitempty"`
@@ -132,7 +111,7 @@ func (ctx *TriviaContext) PlayerConnectionHandler(w http.ResponseWriter, r *http
 		http.Error(w, "Unauthorized Access", 401)
 	}
 
-	player := models.Player{}
+	player := users.User{}
 	if err := json.Unmarshal([]byte(r.Header.Get("X-User")), &player); err != nil {
 		fmt.Printf("error getting message body, %v", err)
 	}
@@ -146,18 +125,18 @@ func (ctx *TriviaContext) PlayerConnectionHandler(w http.ResponseWriter, r *http
 
 	// Insert our connection onto our datastructure for ongoing usage
 	ctx.UserConnections.InsertConnection(player.ID, conn)
+
+	// send lobby information to new connection
+	b, _ := json.Marshal(ctx.Lobbies)
+	conn.WriteMessage(TextMessage, b)
+
 	// Invoke a goroutine for handling control messages from this connection
 	go (func(conn *websocket.Conn, playerID int64) {
 		defer conn.Close()
 		defer ctx.UserConnections.RemoveConnection(playerID)
 
 		for {
-			messageType, p, err := conn.ReadMessage()
-			var j map[string]interface{}
-			if err := json.Unmarshal(p, &j); err != nil {
-				fmt.Println("error unmarshaling json")
-			}
-
+			messageType, _, _ := conn.ReadMessage()
 			if messageType == CloseMessage {
 				fmt.Println("Close message received...")
 				break
@@ -175,7 +154,7 @@ func (ctx *TriviaContext) PlayerConnectionHandler(w http.ResponseWriter, r *http
 // and creates a channel and queue to send/receive messages to. It returns the go channel
 // which contains messages living on the RabbitMQ queue. Errors are returned if the
 // connection fails
-func (s *SocketStore) ConnectQueue(addr string) (<-chan amqp.Delivery, error) {
+func (ctx *TriviaContext) ConnectQueue(addr string) (<-chan amqp.Delivery, error) {
 	con, err := amqp.Dial("amqp://" + addr)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to MQ, %v", err)
@@ -185,6 +164,8 @@ func (s *SocketStore) ConnectQueue(addr string) (<-chan amqp.Delivery, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error creating channel, %v", err)
 	}
+
+	ctx.Channel = chann
 
 	queue, err := chann.QueueDeclare(qName, true, false, false, false, nil)
 	if err != nil {
@@ -200,14 +181,19 @@ func (s *SocketStore) ConnectQueue(addr string) (<-chan amqp.Delivery, error) {
 
 // Read reads events off the passed go channel created by the ConnectQueue method
 // and sends the messages to the proper websockets in the SocketStore
-func (s *SocketStore) Read(events <-chan amqp.Delivery) {
+func (ctx *TriviaContext) Read(events <-chan amqp.Delivery) {
 	for e := range events {
-		event := Message{}
-		if err := json.Unmarshal(e.Body, &event); err != nil {
+		var res map[string]interface{}
+		if err := json.Unmarshal(e.Body, &res); err != nil {
 			fmt.Printf("error getting message body, %v", err)
 			break
 		}
-		s.WriteToValidConnections(event.UserIDs, TextMessage, e.Body)
-
+		eType := res["type"].(string)
+		if strings.HasPrefix(eType, "channel") || strings.HasPrefix(eType, "message") { // for msg notification
+			event := Message{}
+			ctx.UserConnections.WriteToValidConnections(event.UserIDs, TextMessage, e.Body)
+		} else { // for trivia game
+			ctx.TriviaHandler(e.Body)
+		}
 	}
 }
