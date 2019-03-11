@@ -12,6 +12,7 @@
 <body>
     <div class="form">
         <h1 class="tr-title">Trivia Roullette</h1>
+        <a href="lobby.html">React</a>
         <ul class="tab-group">
             <li class="tab active"><a href="#signup">Sign Up</a></li>
             <li class="tab"><a href="#login">Log In</a></li>
@@ -20,7 +21,7 @@
         <div class="tab-content">
             <div id="signup">
                 <h1>Sign Up for Free</h1>
-                <form action="/" method="post">
+                <form id="new-user-form">
 
                     <div class="top-row">
                         <div class="field-wrap">
@@ -66,9 +67,10 @@
                         <input type="password" required autocomplete="off" />
                     </div>
 
-                    <button type="submit" class="button button-block">Get Started</button>
+                    
 
                 </form>
+                <button id="submit-new-user" class="button button-block">Get Started</button>
 
             </div>
 
