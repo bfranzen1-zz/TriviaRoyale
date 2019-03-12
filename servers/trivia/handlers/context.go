@@ -9,24 +9,15 @@ import (
 )
 
 type TriviaContext struct {
-	/*
-		NEED:
-		-	queue to publish/consume from
-
-		-	mongo store
-
-		- 	user db connection
-
-		-	lobbies (each one gets subset of user connections)
-
-		- all user connections
-	*/
-
+	// channel for publishing messages
 	Channel *amqp.Channel
 
+	// mongo store for saving game/user stats
 	Mongo *mongo.MongoStore
 
+	// access to methods from gateway for basic
 	Users users.Store
 
+	// map from creator id to lobby struct for game logic/state
 	Lobbies map[int64]*Lobby
 }

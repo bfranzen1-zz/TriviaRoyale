@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 const (
@@ -43,7 +44,15 @@ func (ctx *TriviaContext) LobbyHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("error getting message body, %v", err)
 	}
 
-	if r.Method == "POST" {
+	if r.Method == "GET" { // user goes to lobby page
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		enc := json.NewEncoder(w)
+		if err := enc.Encode(ctx.Lobbies); err != nil {
+			fmt.Printf("Error encoding to JSON: %v", err)
+			return
+		}
+	} else if r.Method == "POST" { // new lobby
 		j, err := getJSON(r, w)
 		if err != nil {
 			http.Error(w, "Bad Request", 400)
@@ -68,6 +77,8 @@ func (ctx *TriviaContext) LobbyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		ctx.PublishData(e)
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(201)
 		w.Write([]byte("lobby created"))
 	} else {
 		http.Error(w, "Method Not Allowed", 405)
@@ -84,6 +95,8 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 	if err := json.Unmarshal([]byte(r.Header.Get("X-User")), &player); err != nil {
 		fmt.Printf("error getting message body, %v", err)
 	}
+	//lobby id
+	lid, _ := strconv.ParseInt(r.URL.Path[11:], 10, 64)
 
 	if r.Method == "GET" { // start game
 		if val, ok := ctx.Lobbies[player.ID]; ok { // creator has lobby and is creator
@@ -92,9 +105,8 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 
 	} else if r.Method == "POST" { // add user
 		reqType := r.URL.Query().Get("type")
-		j, _ := getJSON(r, w)
 		if reqType == "add" { // user asking to join lobby
-			lob := ctx.Lobbies[j["lobbyID"].(int64)]
+			lob := ctx.Lobbies[lid]
 			lob.State.Players = append(lob.State.Players, player.ID)
 			if err := ctx.Mongo.Update(lob.MongoId, "game", bson.M{"$set": bson.M{"state": lob.State}}); err != nil {
 				fmt.Println("error updating record, %v", err)
@@ -105,6 +117,8 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 				UserIDs: lob.State.Players,
 			}
 			ctx.PublishData(e)
+			w.Header().Set("Content-Type", "text/html")
+			w.WriteHeader(201)
 			w.Write([]byte("user added to lobby"))
 		}
 
@@ -118,16 +132,30 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 				http.Error(w, "Invalid JSON Syntax", 400)
 				fmt.Println("Invalid JSON Syntax")
 			}
+			if lid != dest.LobbyID {
+				fmt.Printf("format error, request id for lobby was %d, answer contained %d", lid, dest.LobbyID)
+			}
 			ans := ctx.Lobbies[dest.LobbyID].State.Answers[dest.QuestionID]
 			ans = append(ans, dest)
 			lob := ctx.Lobbies[dest.LobbyID]
 			if err := ctx.Mongo.Update(lob.MongoId, "game", bson.M{"$set": bson.M{"state": lob.State}}); err != nil {
 				fmt.Println("error updating record, %v", err)
 			}
-			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Content-Type", "text/html")
 			w.WriteHeader(200)
 			w.Write([]byte("answer received"))
 		}
+	} else if r.Method == "PATCH" { // update options
+		j, err := getJSON(r, w)
+		if err != nil {
+			http.Error(w, "Bad Request", 400)
+		}
+		var opt Options
+		mapstructure.Decode(j["options"], &opt)
+		ctx.Lobbies[lid].Options = &opt
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(200)
+		w.Write([]byte("updated options"))
 	} else {
 		http.Error(w, "Method Not Allowed", 405)
 	}

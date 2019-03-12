@@ -5,6 +5,9 @@
 (cd ../summary/ ; sh deploy.sh)
 (cd ../messaging/ ; sh build.sh)
 
+# build final project microservice
+(cd ../trivia/ ; sh build.sh)
+
 # push Container to Docker Hub
 docker login
 docker push bfranzen1/api.bfranzen.me
@@ -16,6 +19,7 @@ docker rm -f api;
 docker rm -f red;
 docker rm -f mysql;
 docker rm -f rmq;
+docker rm -f mgo;
 docker run -d --name red --network api redis;
 docker run -d --name rmq --network api -p 5672:5672 -p 15672:15672 rabbitmq:3-management
 export MYSQL_ROOT_PASSWORD=$(openssl rand -base64 18);
@@ -24,6 +28,7 @@ docker run -d --name mysql --network api \
 bfranzen1/mysql;
 export DSN=\"root:\$MYSQL_ROOT_PASSWORD@tcp(mysql:3306)/api\"; 
 export SESSIONKEY=$(openssl rand -base64 18);
+docker run -d --name mgo --network api -p 27017:27017 mongo;
 
 sleep 20s;
 docker exec mysql mysql -uroot -p\$MYSQL_ROOT_PASSWORD -e \"ALTER USER root IDENTIFIED WITH mysql_native_password BY '\$MYSQL_ROOT_PASSWORD';\"
@@ -44,6 +49,15 @@ docker run -d \
 -e rmQueue='notify' \
 bfranzen1/msg;
 
+docker rm -f trivia;
+docker run -d \
+--name trivia \
+--network api \
+-e RABBITMQ=rmq:5672 \
+-e DSN=\$DSN \
+-e MONGO_ADDR=mgo:27017 \
+bfranzen1/trivia;
+
 docker pull bfranzen1/api.bfranzen.me &&
 docker run -d \
 --name api \
@@ -58,5 +72,6 @@ docker run -d \
 -e MESSAGESADDR=msg:5000 \
 -e SUMMARYADDR=sum:80 \
 -e RABBITMQ=rmq:5672 \
+-e TRIVADDR=trivia:8000 \ 
 bfranzen1/api.bfranzen.me
 "
