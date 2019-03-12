@@ -4,9 +4,55 @@ setInterval(function () {
   glow.toggleClass('glow');
 }, 1000);
 
+/*
+////////////////////////////
+////////////////////////////
+  DOM Functions
+///////////////////////////
+///////////////////////////
+*/
+
+// Switch from landing page to lobby
+function switchToLobby() {
+  var landing = document.querySelector(".landing");
+  var game = document.querySelector(".game");
+  if (landing.style.display === "none") {
+    landing.style.display = "flex";
+    game.style.display = "none"
+  } else {
+    landing.style.display = "none";
+    game.style.display = "flex"
+  }
+};
+
+// Switch from lobby to game
+function switchToGame() {
+  $('.waiting').hide();
+  $('.playing').show();
+  $('.board').css('height', 'auto')
+}
 
 
-// Helper Functions
+
+// Switch from game to landing
+function leaveGameHandler() {
+  $('.game').hide();
+  $('.waiting').show();
+  $('.playing').hide();
+  $('.landing').show();
+  $('.board').css('height', '80vh');
+}
+
+
+
+/*
+////////////////////////////
+////////////////////////////
+  Landing Page Functions
+///////////////////////////
+///////////////////////////
+*/
+
 function createAddLobby (lob) {
   var newLob = document.createElement('DIV');
   newLob.setAttribute('class', 'lobby')
@@ -43,22 +89,6 @@ function createAddLobby (lob) {
   $('.lobbies').append(newLob);
 }
 
-
-
-// Button Handlers
-var currentLobby;
-function switchToLobby() {
-  var landing = document.querySelector(".landing");
-  var game = document.querySelector(".game");
-  if (landing.style.display === "none") {
-    landing.style.display = "flex";
-    game.style.display = "none"
-  } else {
-    landing.style.display = "none";
-    game.style.display = "flex"
-  }
-};
-
 function joinGame() {
     /*
     Step 1: Post request to /trivia/id
@@ -79,20 +109,8 @@ function createGame () {
 }
 $('.new-lobby').on('click', createGame);
 
-$(".form-control").on('change', function () {
-  console.log(this.value)
-});
-
-$('#category').val('lmao')
 
 
-
-
-/*
-/////
-  Websocket Message Handlers
-/////
-*/
 
 // Get lobbies
 let placeholderLobs = [{ id: "1", creator: "Dalai", category: 'Nature', difficulty: 'Easy', inProgress: false }]
@@ -107,9 +125,39 @@ function getAllLobbies() {
   */
 }
 
+var lobbies = document.querySelectorAll(".join");
+var gameStart = document.querySelectorAll(".start-game");
+var leaveGame = document.querySelector(".leave-game");
+leaveGame.addEventListener('click', leaveGameHandler, false);
+for (var i = 0; i < gameStart.length; i++) {
+  gameStart[i].addEventListener('click', startGameHandler, false)
+}
 
 
+/*
+////////////////////////////
+////////////////////////////
+  Inside Lobby Functions
+///////////////////////////
+///////////////////////////
+*/
+$(".form-control").on('change', function () {
+  console.log(this.value)
+});
+$('#category').val('lmao')
 
+// Handle the start of a new game
+function startGameHandler() {
+  /*
+    Step 1: Run newQuestionHandler
+    Step 2: Switch to show game DOM
+    Step 3: (Might have to wait for question)
+  */
+
+ // $('#' + id).addClass("disabled").text("In Progress").off('click', switchToLobby);
+  newQuestionHandler()
+  switchToGame()
+}
 
 
 
@@ -117,14 +165,16 @@ function getAllLobbies() {
 
 
 /*
-/////
-  Game Logic
-/////
+////////////////////////////
+////////////////////////////
+  Inside Game Functions
+///////////////////////////
+///////////////////////////
 */
 
 // Handle new question messages from server
 
-newQuestionHandler = function () {
+function newQuestionHandler() {
   // TEMPORARY TIME FOR QUESTION
   var now = new Date().getTime()
   var timeLeft = 30
@@ -146,41 +196,22 @@ newQuestionHandler = function () {
   }
 }
 
-submitAnswer = function() {
-
-}
-
-// Switch DOM to show the 'playing' div, and run 'startGameHandler'
-var switchToGame = function () {
-  startGameHandler(currentLobby);
-  newQuestionHandler()
-  $('.waiting').hide();
-  $('.playing').show()
-  $('.board').css('height', 'auto')
-}
-
-// Handle the start of a new game
-startGameHandler = function (id) {
-  $('#' + id).addClass("disabled").text("In Progress").off('click', switchToLobby);
-}
-
-// Handles switching back to the landing page
-var leaveGameHandler = function () {
-  $('.game').hide();
-  $('.waiting').show();
-  $('.playing').hide();
-  $('.landing').show();
-  $('.board').css('height', '80vh');
+function submitAnswer() {
+  /*
+    Step 1: Send post request to answer
+    Step 2: After successful post request, show message that answer was submitted
+    Step 3: Disable answer buttons
+  */
 }
 
 
-var lobbies = document.querySelectorAll(".join");
-var gameStart = document.querySelectorAll(".start-game");
-var leaveGame = document.querySelector(".leave-game");
-leaveGame.addEventListener('click', leaveGameHandler, false);
-for (var i = 0; i < gameStart.length; i++) {
-  gameStart[i].addEventListener('click', switchToGame, false)
-}
+
+
+
+
+
+
+
 
 
 
