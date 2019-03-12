@@ -43,7 +43,19 @@ $('.tab a').on('click', function (e) {
 
 // Logic to send new user or returning user data to server
 
-$('#submit-new-user').on('click', function() {
-    var newUserData = JSON.stringify($("#new-user-form").serializeArray());
-    console.log(newUserData);
+$('#new-user-form').submit(function(e) {
+    e.preventDefault();
+    var formInputs = $('#new-user-form :input');
+
+    var values = {};
+    formInputs.each(function() {
+        values[this.name] = $(this).val();
+    });
+    console.log(values);
 });
+
+$('#user-form').submit(function(e) {
+    e.preventDefault();
+    window.location.replace("../public/lobby.html");
+});
+

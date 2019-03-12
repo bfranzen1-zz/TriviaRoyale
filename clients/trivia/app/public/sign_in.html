@@ -28,14 +28,14 @@
                             <label>
                                 First Name<span class="req">*</span>
                             </label>
-                            <input type="text" required autocomplete="off" />
+                            <input name="firstName" type="text" required autocomplete="off" />
                         </div>
 
                         <div class="field-wrap">
                             <label>
                                 Last Name<span class="req">*</span>
                             </label>
-                            <input type="text" required autocomplete="off" />
+                            <input name="lastName" type="text" required autocomplete="off" />
                         </div>
                     </div>
 
@@ -43,41 +43,40 @@
                         <label>
                             Email Address<span class="req">*</span>
                         </label>
-                        <input type="email" required autocomplete="off" />
+                        <input name="email" type="email" required autocomplete="off" />
                     </div>
 
                     <div class="field-wrap">
                         <label>
                             Set A User-Name<span class="req">*</span>
                         </label>
-                        <input required autocomplete="off" />
+                        <input name="userName" required autocomplete="off" />
                     </div>
 
                     <div class="field-wrap">
                         <label>
                             Set A Password<span class="req">*</span>
                         </label>
-                        <input type="password" required autocomplete="off" />
+                        <input name="password" type="password" required autocomplete="off" />
                     </div>
 
                     <div class="field-wrap">
                         <label>
                             Confirm Password<span class="req">*</span>
                         </label>
-                        <input type="password" required autocomplete="off" />
+                        <input name="passwordConf" type="password" required autocomplete="off" />
                     </div>
-
-                    
-
+                    <button id="submit-new-user" class="button button-block">Get Started</button>
                 </form>
-                <button id="submit-new-user" class="button button-block">Get Started</button>
+
+                
 
             </div>
 
             <div id="login">
                 <h1>Welcome Back!</h1>
 
-                <form action="/" method="post">
+                <form id="user-form">
 
                     <div class="field-wrap">
                         <label>

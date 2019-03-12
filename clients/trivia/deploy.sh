@@ -10,5 +10,5 @@ export TLSCERT=/etc/letsencrypt/live/jmatray.me/fullchain.pem;
 export TLSKEY=/etc/letsencrypt/live/jmatray.me/privkey.pem;
 docker rm -f jmatray.me.trivia;
 docker pull jmatray/jmatray.me.trivia;
-docker run -d --name jmatray.me -p 443:443 -p 80:80 -v //etc/letsencrypt:/etc/letsencrypt:ro -e TLSCERT=$TLSCERT -e TLSKEY=$TLSKEY jmatray/jmatray.me
+docker run -d --name jmatray.me.trivia -p 81:81 -v //etc/letsencrypt:/etc/letsencrypt:ro -e TLSCERT=$TLSCERT -e TLSKEY=$TLSKEY jmatray/jmatray.me.trivia
 "
