@@ -13,7 +13,7 @@ var createAddLobby = function (lob) {
   
   var img = document.createElement('IMG')
   img.setAttribute('class', 'lobby-pic')
-  img.setAttribute('src', 'imgs/Drawing.png')
+  img.setAttribute('src', '/imgs/Drawing.png')
 
   var creat = document.createElement('P')
   creat.innerHTML = "Creator: " + lob.creator

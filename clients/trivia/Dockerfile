@@ -1,4 +1,3 @@
 FROM nginx
-ADD default.conf /etc/nginx/conf.d/default.conf
-EXPOSE 443
+COPY nginx.config /etc/nginx/conf.d/default.conf
 COPY app /usr/share/nginx/app
