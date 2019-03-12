@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/TriviaRoulette/servers/trivia/handlers"
+	u "github.com/TriviaRoulette/servers/trivia/models/users"
+	m "github.com/TriviaRoulette/servers/trivia/mongo"
+	mgo "gopkg.in/mgo.v2"
 	"log"
 	"net/http"
 	"os"
@@ -27,14 +30,24 @@ func main() {
 	fmt.Println(db)
 
 	// TODO: initialize mongostore
+	mg := os.Getenv("MONGO_ADDR")
+	sess, err := mgo.Dial(mg)
+	if err != nil {
+		log.Fatalf("error dialing mongo: %v", err)
+	}
+
 	// TODO: connect to queue
 	// TODO: initialize socketstore
 	// TODO: initialize lobbies
 	// TODO: need context
+	ctx := handlers.TriviaContext{
+		Mongo: m.NewMongoStore(sess),
+		Users: u.NewMySqlStore(db),
+	}
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/v1/trivia", handlers.PlayerConnectionHandler)
+	mux.HandleFunc("/v1/trivia", ctx.PlayerConnectionHandler)
 
 	log.Printf("Server is listening at http:/{container_name}/%s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))

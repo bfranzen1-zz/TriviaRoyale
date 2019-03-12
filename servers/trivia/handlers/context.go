@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"github.com/TriviaRoulette/servers/gateway/models/users"
-	"github.com/TriviaRoulette/servers/trivia/db"
-	"github.com/TriviaRoulette/servers/trivia/models"
+	"github.com/TriviaRoulette/servers/trivia/models/users"
+	mongo "github.com/TriviaRoulette/servers/trivia/mongo"
+	"github.com/streadway/amqp"
 	//"github.com/gorilla/websocket"
 	//"sync"
 )
@@ -22,11 +22,13 @@ type TriviaContext struct {
 		- all user connections
 	*/
 
-	Mongo db.MongoStore
+	Channel *amqp.Channel
+
+	Mongo *mongo.MongoStore
 
 	Users users.Store
 
-	Lobbies []*models.Lobby
+	Lobbies map[int64]*Lobby
 
 	UserConnections *SocketStore
 }

@@ -1,4 +1,4 @@
-package db
+package data
 
 // User Statistics
 // user_stat id
