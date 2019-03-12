@@ -53,7 +53,7 @@ func (ms *MongoStore) Insert(obj interface{}, coll string) error {
 
 // Update updates the record at id in the coll collection using the updates interface
 // passed in. Errors are returned if the update fails
-func (ms *MongoStore) Update(id bson.ObjectId, coll string, updates interface{}) error {
+func (ms *MongoStore) Update(id bson.ObjectId, coll string, updates map[string]interface{}) error {
 	c := ms.ses.DB("game").C(coll)
 
 	if err := c.UpdateId(id, updates); err != nil {

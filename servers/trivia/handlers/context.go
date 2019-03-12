@@ -29,6 +29,4 @@ type TriviaContext struct {
 	Users users.Store
 
 	Lobbies map[int64]*Lobby
-
-	UserConnections *SocketStore
 }

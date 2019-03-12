@@ -7,6 +7,7 @@ import (
 	"github.com/TriviaRoulette/servers/trivia/models/users"
 	"github.com/mitchellh/mapstructure"
 	"github.com/streadway/amqp"
+	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -23,53 +24,11 @@ const (
 // TriviaMessage is a struct that holds
 // information about the parts of the trivia service
 type TriviaMessage struct {
-	Type    string  `json:"type"`
-	LobbyID int64   `json:"lobbyID,omitempty"`
-	Lobby   Lobby   `json:"lobby,omitempty"`
-	Options Options `json:"options,omitempty"`
-}
-
-/*
-GET /v1/trivia
-	- get all lobbies
-	- upgrade user to websocket
-	- returns json encoded slice of type lobby
-POST /v1/trivia
-	- make a new lobby
-		- add new map entry to context lobbies (make sure we mutex lock)
-		- make sure options are correct
-	- type new-lobby queue message
-		- lobby struct (contains gamestate, options, id)
-	- use passed lobby struct to get questions from api
-*/
-
-/*
-POST /v1/trivia/<lobby_id>
-	- user joins lobby
-	- add user to lobby connections
-	- check num users < max
-	- type join-lobby
-		- lobby struct
-*/
-
-// TriviaHandler handles when a client sends messages to the rabbitmq
-// that pertains to the trivia microservice
-func (ctx *TriviaContext) TriviaHandler(data []byte) {
-	event := TriviaMessage{}
-	if err := json.Unmarshal(data, &event); err != nil {
-		fmt.Printf("error getting message body, %v", err)
-	}
-
-	switch event.Type {
-	case "lobby-new":
-		ctx.UserConnections.WriteToValidConnections([]int64{}, TextMessage, data)
-	case "lobby-add":
-
-	case "lobby-start":
-
-	case "game-answer":
-
-	}
+	Type     string     `json:"type"`
+	Lobby    *Lobby     `json:"lobby,omitempty"`
+	Options  Options    `json:"options,omitempty"`
+	Question t.Question `json:"question,omitempty"`
+	UserIDs  []int64    `json:"userIDs,omitempty"`
 }
 
 // LobbyHandler handles when the client creates a new lobby for
@@ -91,16 +50,21 @@ func (ctx *TriviaContext) LobbyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		var opt Options
 		mapstructure.Decode(j["options"], &opt)
-		lob := Lobby{
+		lob := &Lobby{
+			MongoId: bson.NewObjectId(),
 			LobbyId: j["lobbyID"].(int64),
 			Options: &opt,
 			State:   getData(opt),
+			Creator: &player,
+			Over:    false,
 		}
-		ctx.Lobbies[j["lobbyID"].(int64)] = &lob
+		if err := ctx.Mongo.Insert(lob, "game"); err != nil {
+			fmt.Println("error inserting record, %v", err)
+		}
+		ctx.Lobbies[j["lobbyID"].(int64)] = lob
 		e := TriviaMessage{
-			Type:    "lobby-new",
-			Lobby:   lob,
-			LobbyID: lob.LobbyId,
+			Type:  "lobby-new",
+			Lobby: lob,
 		}
 
 		ctx.PublishData(e)
@@ -121,29 +85,55 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 		fmt.Printf("error getting message body, %v", err)
 	}
 
-	if r.Method == "POST" {
+	if r.Method == "GET" { // start game
+		if val, ok := ctx.Lobbies[player.ID]; ok { // creator has lobby and is creator
+			go ctx.StartGame(val)
+		}
 
+	} else if r.Method == "POST" { // add user
+		reqType := r.URL.Query().Get("type")
+		j, _ := getJSON(r, w)
+		if reqType == "add" { // user asking to join lobby
+			lob := ctx.Lobbies[j["lobbyID"].(int64)]
+			lob.State.Players = append(lob.State.Players, player.ID)
+			if err := ctx.Mongo.Update(lob.MongoId, "game", bson.M{"$set": bson.M{"state": lob.State}}); err != nil {
+				fmt.Println("error updating record, %v", err)
+			}
+			e := TriviaMessage{
+				Type:    "lobby-add",
+				Lobby:   lob,
+				UserIDs: lob.State.Players,
+			}
+			ctx.PublishData(e)
+			w.Write([]byte("user added to lobby"))
+		}
+
+		if reqType == "answer" { // client answers question
+			j, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				fmt.Printf("Error reading request body: %v", err)
+			}
+			var dest t.Answer
+			if err = json.Unmarshal(j, &dest); err != nil {
+				http.Error(w, "Invalid JSON Syntax", 400)
+				fmt.Println("Invalid JSON Syntax")
+			}
+			ans := ctx.Lobbies[dest.LobbyID].State.Answers[dest.QuestionID]
+			ans = append(ans, dest)
+			lob := ctx.Lobbies[dest.LobbyID]
+			if err := ctx.Mongo.Update(lob.MongoId, "game", bson.M{"$set": bson.M{"state": lob.State}}); err != nil {
+				fmt.Println("error updating record, %v", err)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(200)
+			w.Write([]byte("answer received"))
+		}
 	} else {
 		http.Error(w, "Method Not Allowed", 405)
 	}
 }
 
-/*					******MESSAGES******
-
- -- FROM CLIENT ->
-			lobby-new (get unique id from user, lobby options)
-				-- add to lobby slice in ctx
-				-- get api data from open trivia
-
-			lobby-add
-				-- add user to lobby players
-
-			lobby-start
-				-- send first question
-
-			game-answer
-				-- player answers question
-
+/*
  -- FROM SERVER ->
 
 			game-question
@@ -203,8 +193,9 @@ func getData(opt Options) *GameState {
 // and returns that object
 func formatState(data []byte) *GameState {
 	state := GameState{
-		Players: &SocketStore{},
-		Answers: map[int64]*t.Answer{},
+		Players:   []int64{},
+		Answers:   map[int64][]t.Answer{},
+		Questions: []t.Question{},
 	}
 	var res map[string]interface{}
 	if err := json.Unmarshal(data, &res); err != nil {
@@ -214,7 +205,7 @@ func formatState(data []byte) *GameState {
 	for i, q := range arr {
 		nxt := t.Question{}
 		row := q.(map[string]interface{})
-		nxt.QuestionNum = int64(i)
+		nxt.QuestionID = int64(i + 1) // start at 1
 		nxt.Question = row["question"].(string)
 		nxt.Choices = row["incorrect_answers"].([]string)
 		nxt.Answer = row["correct_answer"].(string)

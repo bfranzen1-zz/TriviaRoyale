@@ -60,7 +60,7 @@ const (
 	PongMessage = 10
 
 	// name of rabbitmq queue to use for notifications
-	qName = "notify"
+	qName = "services"
 )
 
 // InsertConnection is a Thread-safe method for inserting a connection
@@ -202,12 +202,12 @@ func (s *SocketStore) ConnectQueue(addr string) (<-chan amqp.Delivery, error) {
 // and sends the messages to the proper websockets in the SocketStore
 func (s *SocketStore) Read(events <-chan amqp.Delivery) {
 	for e := range events {
-		event := Message{}
+		var event map[string]interface{}
 		if err := json.Unmarshal(e.Body, &event); err != nil {
 			fmt.Printf("error getting message body, %v", err)
 			break
 		}
-		s.WriteToValidConnections(event.UserIDs, TextMessage, e.Body)
+		s.WriteToValidConnections(event["UserIDs"].([]int64), TextMessage, e.Body)
 
 	}
 }

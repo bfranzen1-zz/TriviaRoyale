@@ -5,16 +5,20 @@ import (
 )
 
 type Question struct {
-	QuestionNum int64    `json:"question_number"`
-	Question    string   `json:"question"`
-	Choices     []string `json:"choices"`
-	Answer      string   `json:"-"` // don't want user to see this
-
+	QuestionID int64     `json:"questionID"`
+	Question   string    `json:"question"`
+	Choices    []string  `json:"choices"`
+	Answer     string    `json:"-"` // don't want user to see this
+	SentAt     time.Time `json:"sentAt"`
 }
 
 type Answer struct {
-	UserID int64  `json:"userID"`
-	Answer string `json:"answer"`
+	LobbyID    int64  `json:"lobbyID"`
+	UserID     int64  `json:"userID"`
+	QuestionID int64  `json:"questionID"`
+	Answer     string `json:"answer"`
 	// to make sure user answered quick enough
-	SentAt time.Time `json:"sentAt"`
+	// ReceivedAt time.Time `json:"receivedAt"` // when client got question
+	// SentAt     time.Time `json:"sentAt"`     // when client sent answer
+
 }
