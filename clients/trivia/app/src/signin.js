@@ -45,7 +45,13 @@ $('.tab a').on('click', function (e) {
 
 $('#new-user-form').submit(function(e) {
     e.preventDefault();
-    window.location.replace("../public/lobby.html");
+    var formInputs = $('#new-user-form :input');
+
+    var values = {};
+    formInputs.each(function() {
+        values[this.name] = $(this).val();
+    });
+    console.log(values);
 });
 
 $('#user-form').submit(function(e) {
