@@ -9,22 +9,21 @@
 
 # push Container to Docker Hub
 docker login
-docker push bfranzen1/api.bfranzen.me
-docker push bfranzen1/mysql
+docker push bfranzen1/trivia.bfranzen.me
+docker push bfranzen1/tmysql
+docker push bfranzen1/trivia
 
 # pull and run Container from API VM
 ssh ec2-user@ec2-52-26-94-110.us-west-2.compute.amazonaws.com "docker system prune -a --volumes;
 docker rm -f api;
-docker rm -f red;
 docker rm -f mysql;
 docker rm -f rmq;
-docker rm -f mgo;
-docker run -d --name red --network api redis;
+docker rm -f mgo
 docker run -d --name rmq --network api -p 5672:5672 -p 15672:15672 rabbitmq:3-management
 export MYSQL_ROOT_PASSWORD=$(openssl rand -base64 18);
 docker run -d --name mysql --network api \
 -e MYSQL_ROOT_PASSWORD=\$MYSQL_ROOT_PASSWORD -e MYSQL_DATABASE=api \
-bfranzen1/mysql;
+bfranzen1/tmysql;
 export DSN=\"root:\$MYSQL_ROOT_PASSWORD@tcp(mysql:3306)/api\"; 
 export SESSIONKEY=$(openssl rand -base64 18);
 docker run -d --name mgo --network api -p 27017:27017 mongo;
@@ -71,5 +70,5 @@ docker run -d \
 -e MESSAGESADDR=msg:5000 \
 -e RABBITMQ=rmq:5672 \
 -e TRIVADDR=trivia:8000 \
-bfranzen1/api.bfranzen.me;
+bfranzen1/trivia.bfranzen.me;
 "

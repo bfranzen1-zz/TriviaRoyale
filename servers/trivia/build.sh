@@ -1,11 +1,9 @@
 # Build Go executable using linux
+go install
 GOOS=linux go build
 
 # Build Docker Container
-docker build -t bfranzen1/trivia .
+docker build --no-cache -t bfranzen1/trivia .
 
 # Delete pre-existing Go executable
 go clean
-
-docker login
-docker push bfranzen1/trivia

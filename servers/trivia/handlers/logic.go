@@ -17,11 +17,12 @@ type GameState struct {
 
 // Lobby contains information for a specific lobby instance
 type Lobby struct {
-	LobbyID bson.ObjectId `json:"lobbyId" bson:"_id"`
-	State   *GameState    `json:"state" bson:"state"`
-	Options *Options      `json:"options" bson:"options"`
-	Creator *users.User   `json:"creator" bson:"creator"`
-	Over    bool          `json:"over" bson:"over"`
+	LobbyID    bson.ObjectId `json:"lobbyId" bson:"_id"`
+	State      *GameState    `json:"state" bson:"state"`
+	Options    *Options      `json:"options" bson:"options"`
+	Creator    *users.User   `json:"creator" bson:"creator"`
+	Over       bool          `json:"over" bson:"over"`
+	InProgress bool          `json:"in_progress" bson:"in_progress"`
 }
 
 // Options stores information that defines how a game will be structured
@@ -57,6 +58,7 @@ type UserStatistic struct {
 
 func (ctx *TriviaContext) StartGame(lob *Lobby) {
 	// TODO: start go routine for specific lobby questions
+	lob.InProgress = true
 	start := TriviaMessage{
 		Type:    "game-start",
 		Lobby:   lob,

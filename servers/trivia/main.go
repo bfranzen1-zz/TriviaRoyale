@@ -7,6 +7,7 @@ import (
 	u "github.com/TriviaRoulette/servers/trivia/models/users"
 	m "github.com/TriviaRoulette/servers/trivia/mongo"
 	mgo "gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 	"log"
 	"net/http"
 	"os"
@@ -37,9 +38,9 @@ func main() {
 	// TODO: initialize lobbies
 	// TODO: need context
 	ctx := handlers.TriviaContext{
-		Mongo: m.NewMongoStore(sess),
-		Users: u.NewMySqlStore(db),
-		// lobbies is nil on initialization
+		Mongo:   m.NewMongoStore(sess),
+		Users:   u.NewMySqlStore(db),
+		Lobbies: map[bson.ObjectId]*handlers.Lobby{},
 	}
 	// connect/add queue to context
 	ctx.ConnectQueue(os.Getenv("RABBITADDR"))

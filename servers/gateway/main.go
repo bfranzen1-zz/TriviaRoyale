@@ -29,7 +29,7 @@ func main() {
 	rmq := os.Getenv("RABBITMQ")
 	msg := strings.Split(os.Getenv("MESSAGESADDR"), ",")
 	// for final project
-	triv := os.Getenv("TRIVADDR")
+	triv := strings.Split(os.Getenv("TRIVADDR"), ",")
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -72,8 +72,7 @@ func main() {
 	}
 
 	msgProxy := &httputil.ReverseProxy{Director: CustomDirectorRR(msg, &hc)}
-	tUrl, _ := url.Parse(triv)
-	trivProxy := &httputil.ReverseProxy{Director: CustomDirector(tUrl, &hc)}
+	trivProxy := &httputil.ReverseProxy{Director: CustomDirectorRR(triv, &hc)}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/ws", hc.WebSocketConnectionHandler)
@@ -115,6 +114,7 @@ func CustomDirectorRR(targets []string, hc *handlers.HandlerContext) Director {
 		if tmp.User.ID != 0 { // set if user exists
 			j, err := json.Marshal(tmp.User)
 			if err != nil {
+				fmt.Println(err)
 				return
 			}
 			r.Header.Set("X-User", string(j))
@@ -136,6 +136,7 @@ func CustomDirector(target *url.URL, hc *handlers.HandlerContext) Director {
 		if tmp.User.ID != 0 { // set if user exists
 			j, err := json.Marshal(tmp.User)
 			if err != nil {
+				fmt.Println(err)
 				return
 			}
 			r.Header.Set("X-User", string(j))
