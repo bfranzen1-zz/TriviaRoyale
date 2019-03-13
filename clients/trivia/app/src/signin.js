@@ -1,3 +1,20 @@
+/**
+ *********************************
+TODO:
+
+    1. Send post request to users
+        a. On success, store auth key and possibly user struct in local storage, redirect to lobbies
+        b. On fail, show alert with error message
+    2. Send get request to users (or whatever validation is)
+        a. On success, store auth key and possibly user struct in local storage, redirect to lobbies
+        b. On fail, show alert with error message
+
+ *********************************
+ */
+
+const url = "placeholder.com"
+
+
 $('.form').find('input, textarea').on('keyup blur focus', function (e) {
 
     var $this = $(this),
@@ -51,7 +68,23 @@ $('#new-user-form').submit(function(e) {
     formInputs.each(function() {
         values[this.name] = $(this).val();
     });
-    console.log(values);
+    var valJson = JSON.stringify(values);
+
+    $.ajax({
+        type: "POST",
+        url: url,
+        contentType: 'application/json',
+        data: valJson,
+        success: function( data, textStatus, response) {
+            var auth = response.getResponseHeader('Authorization');
+            localStorage.setItem('auth', auth)
+            window.location.replace("../public/lobby.html");
+        },
+        error: function(jqXhr, textStatus, errorThrown) {
+            alert(errorThrown);
+        }
+    })
+
 });
 
 $('#user-form').submit(function(e) {

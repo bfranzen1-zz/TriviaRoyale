@@ -5,8 +5,97 @@ setInterval(function () {
 }, 1000);
 
 
+/*
+////////////////////////////
+////////////////////////////
+  Connect to websocket
+///////////////////////////
+///////////////////////////
+*/
 
-// Helper Functions
+const hostUrl = "wss://api.jmatray.me/v1/ws?auth="
+const auth = "placeholder"
+
+socket = new WebSocket(hostUrl + auth)
+socket.onopen = function() {
+    alert("WebSocket Opened");
+}
+
+socket.onmessage = function(event) {
+  console.log("Message Received");
+
+  var receivedMsg = JSON.parse(event.data);
+  var type = receivedMsg.type;
+
+  if (type === 'new-lobby') {
+
+  } 
+}
+
+socket.onclose = function(event) {
+  //window.location.replace("http://127.0.0.1:8080/clients/trivia/app/public/sign_in.html");
+}
+
+socket.onerror = function(event) {
+  //alert("Please Sign-In")
+  //window.location.replace("http://127.0.0.1:8080/clients/trivia/app/public/sign_in.html");
+}
+
+
+
+
+
+
+
+/*
+////////////////////////////
+////////////////////////////
+  DOM Functions
+///////////////////////////
+///////////////////////////
+*/
+
+// Switch from landing page to lobby
+function switchToLobby() {
+  var landing = document.querySelector(".landing");
+  var game = document.querySelector(".game");
+  if (landing.style.display === "none") {
+    landing.style.display = "flex";
+    game.style.display = "none"
+  } else {
+    landing.style.display = "none";
+    game.style.display = "flex"
+  }
+};
+
+// Switch from lobby to game
+function switchToGame() {
+  $('.waiting').hide();
+  $('.playing').show();
+  $('.board').css('height', 'auto')
+}
+
+
+
+// Switch from game to landing
+function leaveGameHandler() {
+  $('.game').hide();
+  $('.waiting').show();
+  $('.playing').hide();
+  $('.landing').show();
+  $('.board').css('height', '80vh');
+}
+
+
+
+/*
+////////////////////////////
+////////////////////////////
+  Landing Page Functions
+///////////////////////////
+///////////////////////////
+*/
+
 function createAddLobby (lob) {
   var newLob = document.createElement('DIV');
   newLob.setAttribute('class', 'lobby')
@@ -43,27 +132,12 @@ function createAddLobby (lob) {
   $('.lobbies').append(newLob);
 }
 
-
-
-// Button Handlers
-var currentLobby;
-function switchToLobby() {
-  var landing = document.querySelector(".landing");
-  var game = document.querySelector(".game");
-  if (landing.style.display === "none") {
-    landing.style.display = "flex";
-    game.style.display = "none"
-  } else {
-    landing.style.display = "none";
-    game.style.display = "flex"
-  }
-};
-
 function joinGame() {
     /*
     Step 1: Post request to /trivia/id
     Step 2: Wait for response with lobby struct
-    Step 3: Switch to show lobby
+    Step 3: Update number of players
+    Step 4: Switch to show lobby
   */
 }
 
@@ -72,6 +146,7 @@ function createGame () {
     Step 1: Post request to /trivia
     Step 2: Wait for response of new lobby created, with lobby struct
     Step 3: Track the creator somehow
+    Step 4: Update number of players
     Step 4: Switch to show lobby
   */
 
@@ -79,20 +154,8 @@ function createGame () {
 }
 $('.new-lobby').on('click', createGame);
 
-$(".form-control").on('change', function () {
-  console.log(this.value)
-});
-
-$('#category').val('lmao')
 
 
-
-
-/*
-/////
-  Websocket Message Handlers
-/////
-*/
 
 // Get lobbies
 let placeholderLobs = [{ id: "1", creator: "Dalai", category: 'Nature', difficulty: 'Easy', inProgress: false }]
@@ -107,9 +170,39 @@ function getAllLobbies() {
   */
 }
 
+var lobbies = document.querySelectorAll(".join");
+var gameStart = document.querySelectorAll(".start-game");
+var leaveGame = document.querySelector(".leave-game");
+leaveGame.addEventListener('click', leaveGameHandler, false);
+for (var i = 0; i < gameStart.length; i++) {
+  gameStart[i].addEventListener('click', startGameHandler, false)
+}
 
 
+/*
+////////////////////////////
+////////////////////////////
+  Inside Lobby Functions
+///////////////////////////
+///////////////////////////
+*/
+$(".form-control").on('change', function () {
+  console.log(this.value)
+});
 
+
+// Handle the start of a new game
+function startGameHandler() {
+  /*
+    Step 1: Run newQuestionHandler
+    Step 2: Switch to show game DOM
+    Step 3: (Might have to wait for question)
+  */
+
+ // $('#' + id).addClass("disabled").text("In Progress").off('click', switchToLobby);
+  newQuestionHandler()
+  switchToGame()
+}
 
 
 
@@ -117,14 +210,16 @@ function getAllLobbies() {
 
 
 /*
-/////
-  Game Logic
-/////
+////////////////////////////
+////////////////////////////
+  Inside Game Functions
+///////////////////////////
+///////////////////////////
 */
 
 // Handle new question messages from server
 
-newQuestionHandler = function () {
+function newQuestionHandler() {
   // TEMPORARY TIME FOR QUESTION
   var now = new Date().getTime()
   var timeLeft = 30
@@ -146,41 +241,22 @@ newQuestionHandler = function () {
   }
 }
 
-submitAnswer = function() {
-
-}
-
-// Switch DOM to show the 'playing' div, and run 'startGameHandler'
-var switchToGame = function () {
-  startGameHandler(currentLobby);
-  newQuestionHandler()
-  $('.waiting').hide();
-  $('.playing').show()
-  $('.board').css('height', 'auto')
-}
-
-// Handle the start of a new game
-startGameHandler = function (id) {
-  $('#' + id).addClass("disabled").text("In Progress").off('click', switchToLobby);
-}
-
-// Handles switching back to the landing page
-var leaveGameHandler = function () {
-  $('.game').hide();
-  $('.waiting').show();
-  $('.playing').hide();
-  $('.landing').show();
-  $('.board').css('height', '80vh');
+function submitAnswer() {
+  /*
+    Step 1: Send post request to answer
+    Step 2: After successful post request, show message that answer was submitted
+    Step 3: Disable answer buttons
+  */
 }
 
 
-var lobbies = document.querySelectorAll(".join");
-var gameStart = document.querySelectorAll(".start-game");
-var leaveGame = document.querySelector(".leave-game");
-leaveGame.addEventListener('click', leaveGameHandler, false);
-for (var i = 0; i < gameStart.length; i++) {
-  gameStart[i].addEventListener('click', switchToGame, false)
-}
+
+
+
+
+
+
+
 
 
 
