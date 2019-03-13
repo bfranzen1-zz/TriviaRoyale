@@ -4,6 +4,49 @@ setInterval(function () {
   glow.toggleClass('glow');
 }, 1000);
 
+
+/*
+////////////////////////////
+////////////////////////////
+  Connect to websocket
+///////////////////////////
+///////////////////////////
+*/
+
+const hostUrl = "wss://api.jmatray.me/v1/ws?auth="
+const auth = "placeholder"
+
+socket = new WebSocket(hostUrl + auth)
+socket.onopen = function() {
+    alert("WebSocket Opened");
+}
+
+socket.onmessage = function(event) {
+  console.log("Message Received");
+
+  var receivedMsg = JSON.parse(event.data);
+  var type = receivedMsg.type;
+
+  if (type === 'new-lobby') {
+
+  } 
+}
+
+socket.onclose = function(event) {
+  //window.location.replace("http://127.0.0.1:8080/clients/trivia/app/public/sign_in.html");
+}
+
+socket.onerror = function(event) {
+  //alert("Please Sign-In")
+  //window.location.replace("http://127.0.0.1:8080/clients/trivia/app/public/sign_in.html");
+}
+
+
+
+
+
+
+
 /*
 ////////////////////////////
 ////////////////////////////
@@ -144,7 +187,7 @@ for (var i = 0; i < gameStart.length; i++) {
 $(".form-control").on('change', function () {
   console.log(this.value)
 });
-$('#category').val('lmao')
+
 
 // Handle the start of a new game
 function startGameHandler() {
