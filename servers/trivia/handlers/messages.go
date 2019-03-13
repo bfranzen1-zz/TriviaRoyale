@@ -11,9 +11,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strconv"
 )
 
+// constants for api request to Open Trivia
 const (
 	baseURL      = "https://opentdb.com/api.php?"
 	numQuestions = "amount"
@@ -60,8 +60,7 @@ func (ctx *TriviaContext) LobbyHandler(w http.ResponseWriter, r *http.Request) {
 		var opt Options
 		mapstructure.Decode(j["options"], &opt)
 		lob := &Lobby{
-			MongoId: bson.NewObjectId(),
-			LobbyId: j["lobbyID"].(int64),
+			LobbyID: bson.NewObjectId(),
 			Options: &opt,
 			State:   getData(opt),
 			Creator: &player,
@@ -70,16 +69,20 @@ func (ctx *TriviaContext) LobbyHandler(w http.ResponseWriter, r *http.Request) {
 		if err := ctx.Mongo.Insert(lob, "game"); err != nil {
 			fmt.Println("error inserting record, %v", err)
 		}
-		ctx.Lobbies[j["lobbyID"].(int64)] = lob
+		ctx.Lobbies[lob.LobbyID] = lob
 		e := TriviaMessage{
 			Type:  "lobby-new",
 			Lobby: lob,
 		}
 
 		ctx.PublishData(e)
-		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(201)
-		w.Write([]byte("lobby created"))
+		enc := json.NewEncoder(w)
+		if err := enc.Encode(lob); err != nil {
+			fmt.Printf("Error encoding to JSON: %v", err)
+			return
+		}
 	} else {
 		http.Error(w, "Method Not Allowed", 405)
 	}
@@ -96,19 +99,22 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 		fmt.Printf("error getting message body, %v", err)
 	}
 	//lobby id
-	lid, _ := strconv.ParseInt(r.URL.Path[11:], 10, 64)
+	lid := r.URL.Path[11:]
 
 	if r.Method == "GET" { // start game
-		if val, ok := ctx.Lobbies[player.ID]; ok { // creator has lobby and is creator
-			go ctx.StartGame(val)
+		if val, ok := ctx.Lobbies[bson.ObjectId(lid)]; ok { // creator has lobby and is creator
+			if val.Creator.ID == player.ID {
+				go ctx.StartGame(val)
+			} else { // not creator, can't start game
+				http.Error(w, "Unauthorized Access", 401)
+			}
 		}
-
 	} else if r.Method == "POST" { // add user
 		reqType := r.URL.Query().Get("type")
 		if reqType == "add" { // user asking to join lobby
-			lob := ctx.Lobbies[lid]
+			lob := ctx.Lobbies[bson.ObjectId(lid)]
 			lob.State.Players = append(lob.State.Players, player.ID)
-			if err := ctx.Mongo.Update(lob.MongoId, "game", bson.M{"$set": bson.M{"state": lob.State}}); err != nil {
+			if err := ctx.Mongo.Update(lob.LobbyID, "game", bson.M{"$set": bson.M{"state": lob.State}}); err != nil {
 				fmt.Println("error updating record, %v", err)
 			}
 			e := TriviaMessage{
@@ -119,7 +125,11 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 			ctx.PublishData(e)
 			w.Header().Set("Content-Type", "text/html")
 			w.WriteHeader(201)
-			w.Write([]byte("user added to lobby"))
+			enc := json.NewEncoder(w)
+			if err := enc.Encode(lob); err != nil {
+				fmt.Printf("Error encoding to JSON: %v", err)
+				return
+			}
 		}
 
 		if reqType == "answer" { // client answers question
@@ -132,13 +142,13 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 				http.Error(w, "Invalid JSON Syntax", 400)
 				fmt.Println("Invalid JSON Syntax")
 			}
-			if lid != dest.LobbyID {
+			if bson.ObjectId(lid) != dest.LobbyID {
 				fmt.Printf("format error, request id for lobby was %d, answer contained %d", lid, dest.LobbyID)
 			}
 			ans := ctx.Lobbies[dest.LobbyID].State.Answers[dest.QuestionID]
 			ans = append(ans, dest)
 			lob := ctx.Lobbies[dest.LobbyID]
-			if err := ctx.Mongo.Update(lob.MongoId, "game", bson.M{"$set": bson.M{"state": lob.State}}); err != nil {
+			if err := ctx.Mongo.Update(lob.LobbyID, "game", bson.M{"$set": bson.M{"state": lob.State}}); err != nil {
 				fmt.Println("error updating record, %v", err)
 			}
 			w.Header().Set("Content-Type", "text/html")
@@ -152,32 +162,18 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 		}
 		var opt Options
 		mapstructure.Decode(j["options"], &opt)
-		ctx.Lobbies[lid].Options = &opt
+		ctx.Lobbies[bson.ObjectId(lid)].Options = &opt
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(200)
-		w.Write([]byte("updated options"))
+		enc := json.NewEncoder(w)
+		if err := enc.Encode(ctx.Lobbies[bson.ObjectId(lid)]); err != nil {
+			fmt.Printf("Error encoding to JSON: %v", err)
+			return
+		}
 	} else {
 		http.Error(w, "Method Not Allowed", 405)
 	}
 }
-
-/*
- -- FROM SERVER ->
-
-			game-question
-
-
-			game-over
-
-			-- player lost, remove connection
-
-			game-end
-
-			-- game over, player made tied/won
-				-- send points
-
-
-*/
 
 // getJSON takes in an http request, destination interface, and response writer
 // to unmarshal and store the request body into the destination and write any errors
@@ -242,6 +238,8 @@ func formatState(data []byte) *GameState {
 	return &state
 }
 
+// PublishData takes the input data and publishes it to rabbitmq
+// for consumers to parse and send to clients
 func (ctx *TriviaContext) PublishData(data interface{}) {
 	body, _ := json.Marshal(data)
 

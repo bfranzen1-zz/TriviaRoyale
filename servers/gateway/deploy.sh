@@ -2,7 +2,6 @@
 ./build.sh
 
 # deploy microservices
-(cd ../summary/ ; sh deploy.sh)
 (cd ../messaging/ ; sh build.sh)
 
 # build final project microservice
@@ -14,7 +13,7 @@ docker push bfranzen1/api.bfranzen.me
 docker push bfranzen1/mysql
 
 # pull and run Container from API VM
-ssh ec2-user@ec2-52-35-123-64.us-west-2.compute.amazonaws.com "docker system prune -a --volumes;
+ssh ec2-user@ec2-52-26-94-110.us-west-2.compute.amazonaws.com "docker system prune -a --volumes;
 docker rm -f api;
 docker rm -f red;
 docker rm -f mysql;
@@ -64,14 +63,13 @@ docker run -d \
 --network api \
 -p 443:443 \
 -v /etc/letsencrypt:/etc/letsencrypt:ro \
--e TLSCERT=/etc/letsencrypt/live/api.bfranzen.me/fullchain.pem \
--e TLSKEY=/etc/letsencrypt/live/api.bfranzen.me/privkey.pem \
+-e TLSCERT=/etc/letsencrypt/live/trivia.bfranzen.me/fullchain.pem \
+-e TLSKEY=/etc/letsencrypt/live/trivia.bfranzen.me/privkey.pem \
 -e SESSIONKEY=\$SESSIONKEY \
 -e REDISADDR=red:6379 \
 -e DSN=\$DSN \
 -e MESSAGESADDR=msg:5000 \
--e SUMMARYADDR=sum:80 \
 -e RABBITMQ=rmq:5672 \
--e TRIVADDR=trivia:8000 \ 
-bfranzen1/api.bfranzen.me
+-e TRIVADDR=trivia:8000 \
+bfranzen1/api.bfranzen.me;
 "

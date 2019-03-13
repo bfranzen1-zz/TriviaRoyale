@@ -26,7 +26,6 @@ func main() {
 		fmt.Printf("error opening database: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Println(db)
 
 	// store game/results
 	mg := os.Getenv("MONGO_ADDR")

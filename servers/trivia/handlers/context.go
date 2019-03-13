@@ -4,6 +4,7 @@ import (
 	"github.com/TriviaRoulette/servers/trivia/models/users"
 	mongo "github.com/TriviaRoulette/servers/trivia/mongo"
 	"github.com/streadway/amqp"
+	"gopkg.in/mgo.v2/bson"
 	//"github.com/gorilla/websocket"
 	//"sync"
 )
@@ -19,5 +20,5 @@ type TriviaContext struct {
 	Users users.Store
 
 	// map from creator id to lobby struct for game logic/state
-	Lobbies map[int64]*Lobby
+	Lobbies map[bson.ObjectId]*Lobby
 }
