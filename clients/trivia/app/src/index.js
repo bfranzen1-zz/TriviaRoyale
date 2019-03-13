@@ -136,7 +136,8 @@ function joinGame() {
     /*
     Step 1: Post request to /trivia/id
     Step 2: Wait for response with lobby struct
-    Step 3: Switch to show lobby
+    Step 3: Update number of players
+    Step 4: Switch to show lobby
   */
 }
 
@@ -145,6 +146,7 @@ function createGame () {
     Step 1: Post request to /trivia
     Step 2: Wait for response of new lobby created, with lobby struct
     Step 3: Track the creator somehow
+    Step 4: Update number of players
     Step 4: Switch to show lobby
   */
 
