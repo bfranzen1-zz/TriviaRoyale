@@ -17,19 +17,20 @@ type GameState struct {
 
 // Lobby contains information for a specific lobby instance
 type Lobby struct {
-	LobbyID bson.ObjectId `json:"lobbyId" bson:"_id"`
-	State   *GameState    `json:"state" bson:"state"`
-	Options *Options      `json:"options" bson:"options"`
-	Creator *users.User   `json:"creator" bson:"creator"`
-	Over    bool          `json:"over" bson:"over"`
+	LobbyID    bson.ObjectId `json:"lobbyId" bson:"_id"`
+	State      *GameState    `json:"state" bson:"state"`
+	Options    *Options      `json:"options" bson:"options"`
+	Creator    *users.User   `json:"creator" bson:"creator"`
+	Over       bool          `json:"over" bson:"over"`
+	InProgress bool          `json:"inProgress" bson:"in_progress"`
 }
 
 // Options stores information that defines how a game will be structured
 type Options struct {
-	NumQuestions int64  `json:"num_questions" bson:"num_questions"`
-	Category     string `json:"category" bson:"category"`
+	NumQuestions int64  `json:"numQuestions" bson:"numQuestions"`
+	Category     int64  `json:"category" bson:"category"`
 	Difficulty   string `json:"difficulty" bson:"difficulty"`
-	MaxPlayers   int64  `json:"max_players" bson:"max_players"`
+	MaxPlayers   int64  `json:"maxPlayers" bson:"maxPlayers"`
 }
 
 // UserStatistic contains information about a players performance in a game
@@ -57,6 +58,7 @@ type UserStatistic struct {
 
 func (ctx *TriviaContext) StartGame(lob *Lobby) {
 	// TODO: start go routine for specific lobby questions
+	lob.InProgress = true
 	start := TriviaMessage{
 		Type:    "game-start",
 		Lobby:   lob,

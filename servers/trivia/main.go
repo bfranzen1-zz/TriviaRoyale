@@ -7,6 +7,7 @@ import (
 	u "github.com/TriviaRoulette/servers/trivia/models/users"
 	m "github.com/TriviaRoulette/servers/trivia/mongo"
 	mgo "gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 	"log"
 	"net/http"
 	"os"
@@ -34,15 +35,20 @@ func main() {
 		log.Fatalf("error dialing mongo: %v", err)
 	}
 
+	ch, err := handlers.ConnectQueue(os.Getenv("RABBITMQ"))
+	if err != nil {
+		log.Fatalf("error connecting to queue, %v", err)
+	}
 	// TODO: initialize lobbies
 	// TODO: need context
 	ctx := handlers.TriviaContext{
-		Mongo: m.NewMongoStore(sess),
-		Users: u.NewMySqlStore(db),
-		// lobbies is nil on initialization
+		Mongo:   m.NewMongoStore(sess),
+		Users:   u.NewMySqlStore(db),
+		Lobbies: map[bson.ObjectId]*handlers.Lobby{},
+		Channel: ch,
 	}
 	// connect/add queue to context
-	ctx.ConnectQueue(os.Getenv("RABBITADDR"))
+	//ctx.ConnectQueue(os.Getenv("RABBITADDR"))
 
 	mux := http.NewServeMux()
 

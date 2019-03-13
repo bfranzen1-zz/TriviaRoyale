@@ -29,6 +29,9 @@ func (l *CorsHeader) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Expose-Headers", "Authorization")
 	w.Header().Set("Access-Control-Max-Age", "600")
 
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+	}
 	//call wrapped handler
 	l.handler.ServeHTTP(w, r)
 }

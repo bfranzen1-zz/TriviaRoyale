@@ -19,6 +19,7 @@ package data
 //
 
 import (
+	"fmt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -43,7 +44,7 @@ func (ms *MongoStore) GetByID(id bson.ObjectId, coll string, dest interface{}) i
 // and returns an error if any occur
 func (ms *MongoStore) Insert(obj interface{}, coll string) error {
 	c := ms.ses.DB("game").C(coll)
-
+	fmt.Printf("obj passed:, %v", obj)
 	if err := c.Insert(obj); err != nil {
 		return err
 	}
