@@ -8,35 +8,38 @@ import (
 	"time"
 )
 
+// GameState contains information for a specific game
 type GameState struct {
-	Players   []int64              `bson:"players"`
-	Questions []t.Question         `bson:"questions"`
-	Answers   map[int64][]t.Answer `bson:"answers"`
+	Players   []int64              `json:"players" bson:"players"`
+	Questions []t.Question         `json:"questions" bson:"questions"`
+	Answers   map[int64][]t.Answer `json:"answers" bson:"answers"`
 }
 
+// Lobby contains information for a specific lobby instance
 type Lobby struct {
-	MongoId bson.ObjectId `bson:"_id"`
-	LobbyId int64         `bson:"lobbyId"`
-	State   *GameState    `bson:"state"`
-	Options *Options      `bson:"options"`
-	Creator *users.User   `bson:"creator"`
-	Over    bool          `bson:"over"`
+	LobbyID bson.ObjectId `json:"lobbyId" bson:"_id"`
+	State   *GameState    `json:"state" bson:"state"`
+	Options *Options      `json:"options" bson:"options"`
+	Creator *users.User   `json:"creator" bson:"creator"`
+	Over    bool          `json:"over" bson:"over"`
 }
 
+// Options stores information that defines how a game will be structured
 type Options struct {
-	NumQuestions int64  `bson:"num_questions"`
-	Category     string `bson:"category"`
-	Difficulty   string `bson:"difficulty"`
-	MaxPlayers   int64  `bson:"max_players"`
+	NumQuestions int64  `json:"num_questions" bson:"num_questions"`
+	Category     string `json:"category" bson:"category"`
+	Difficulty   string `json:"difficulty" bson:"difficulty"`
+	MaxPlayers   int64  `json:"max_players" bson:"max_players"`
 }
 
+// UserStatistic contains information about a players performance in a game
 type UserStatistic struct {
-	MongoId bson.ObjectId `bson:"_id"`
-	GameId  int64         `bson:"gameId"`
-	UserId  int64         `bson:"userId"`
-	Correct int64         `bson:"correct"`
-	Won     bool          `bson:"won"`
-	Points  int64         `bson:"points"`
+	MongoID bson.ObjectId `json:"mongoId" bson:"_id"`
+	GameID  bson.ObjectId `json:"gameId" bson:"gameId"`
+	UserID  int64         `json:"userId" bson:"userId"`
+	Correct int64         `json:"correct" bson:"correct"`
+	Won     bool          `json:"won" bson:"won"`
+	Points  int64         `json:"points" bson:"points"`
 }
 
 /*
@@ -89,9 +92,9 @@ func (ctx *TriviaContext) SaveResults(id int64, over bool, lob *Lobby, currQ int
 	diff := diffAsInt(lob.Options.Difficulty)
 
 	stat := &UserStatistic{
-		MongoId: bson.NewObjectId(),
-		GameId:  lob.LobbyId,
-		UserId:  id,
+		MongoID: bson.NewObjectId(),
+		GameID:  lob.LobbyID,
+		UserID:  id,
 		Correct: currQ - 1,
 		Won:     over,
 	}
@@ -145,6 +148,9 @@ func (ctx *TriviaContext) kickUser(id int64, won bool, lob *Lobby) {
 		Lobby:   lob,
 	}
 	ctx.PublishData(end)
+	if id == lob.Creator.ID { // remove lobby after game over
+		delete(ctx.Lobbies, lob.LobbyID)
+	}
 }
 
 // checkPlayer checks if the player identified by id submitted an answer

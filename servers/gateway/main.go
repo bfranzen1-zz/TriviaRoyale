@@ -28,7 +28,8 @@ func main() {
 	dsn := os.Getenv("DSN")
 	rmq := os.Getenv("RABBITMQ")
 	msg := strings.Split(os.Getenv("MESSAGESADDR"), ",")
-	sum := strings.Split(os.Getenv("SUMMARYADDR"), ",")
+	// for final project
+	triv := os.Getenv("TRIVADDR")
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -70,15 +71,17 @@ func main() {
 		log.Fatal("No TLSKEY variable specified, exiting...")
 	}
 
-	sumProxy := &httputil.ReverseProxy{Director: CustomDirectorRR(sum, &hc)}
 	msgProxy := &httputil.ReverseProxy{Director: CustomDirectorRR(msg, &hc)}
+	tUrl, _ := url.Parse(triv)
+	trivProxy := &httputil.ReverseProxy{Director: CustomDirector(tUrl, &hc)}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/ws", hc.WebSocketConnectionHandler)
-	mux.Handle("/v1/summary", sumProxy)
 	mux.Handle("/v1/channels", msgProxy)
 	mux.Handle("/v1/channels/", msgProxy)
 	mux.Handle("/v1/messages/", msgProxy)
+	mux.Handle("/v1/trivia", trivProxy)
+	mux.Handle("/v1/trivia/", trivProxy)
 	mux.HandleFunc("/v1/users", hc.UsersHandler)
 	mux.HandleFunc("/v1/users/", hc.SpecificUserHandler)
 	mux.HandleFunc("/v1/sessions", hc.SessionsHandler)

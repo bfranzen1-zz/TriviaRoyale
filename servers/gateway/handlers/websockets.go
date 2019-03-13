@@ -121,7 +121,11 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		return strings.Contains(r.Header.Get("Origin"), "bfranzen.me")
+		orig := r.Header.Get("Origin")
+		if strings.Contains(orig, "jmatray.me") || strings.Contains(orig, "bfranzen.me") {
+			return true
+		}
+		return false
 	},
 }
 
