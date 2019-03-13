@@ -14,12 +14,17 @@ docker push bfranzen1/tmysql
 docker push bfranzen1/trivia
 
 # pull and run Container from API VM
-ssh ec2-user@ec2-52-26-94-110.us-west-2.compute.amazonaws.com "docker system prune -a --volumes;
+# might be getting issues because of this >
+        # docker system prune -a --volumes;
+ssh ec2-user@ec2-52-26-94-110.us-west-2.compute.amazonaws.com " docker system prune -a --volumes;
+docker network create api;
 docker rm -f api;
 docker rm -f mysql;
+docker rm -f red;
 docker rm -f rmq;
-docker rm -f mgo
-docker run -d --name rmq --network api -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+docker rm -f mgo;
+docker run -d --name red --network api redis;
+docker run -d --name rmq --network api -p 5672:5672 -p 15672:15672 rabbitmq:3-management;
 export MYSQL_ROOT_PASSWORD=$(openssl rand -base64 18);
 docker run -d --name mysql --network api \
 -e MYSQL_ROOT_PASSWORD=\$MYSQL_ROOT_PASSWORD -e MYSQL_DATABASE=api \
@@ -48,6 +53,7 @@ docker run -d \
 bfranzen1/msg;
 
 docker rm -f trivia;
+docker pull bfranzen1/trivia && 
 docker run -d \
 --name trivia \
 --network api \
@@ -56,7 +62,7 @@ docker run -d \
 -e MONGO_ADDR=mgo:27017 \
 bfranzen1/trivia;
 
-docker pull bfranzen1/api.bfranzen.me &&
+docker pull bfranzen1/trivia.bfranzen.me &&
 docker run -d \
 --name api \
 --network api \

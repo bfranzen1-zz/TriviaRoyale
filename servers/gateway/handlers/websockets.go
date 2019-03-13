@@ -211,7 +211,11 @@ func (s *SocketStore) Read(events <-chan amqp.Delivery) {
 			fmt.Printf("error getting message body, %v", err)
 			break
 		}
-		s.WriteToValidConnections(event["UserIDs"].([]int64), TextMessage, e.Body)
+		if event["UserIDs"] != nil {
+			s.WriteToValidConnections(event["UserIDs"].([]int64), TextMessage, e.Body)
+		} else {
+			s.WriteToValidConnections([]int64{}, TextMessage, e.Body)
+		}
 
 	}
 }
