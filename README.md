@@ -1,5 +1,4 @@
-# TriviaRoulette
-![Trivia Roulette picture](images/image3.png)
+# TriviaRoyale
 
 _03.01.2019_
 
@@ -8,7 +7,7 @@ Jake Matray
 Blake Franzen
 
 ## Overview
-Trivia Roulette is an application that lets users play trivia games with others in a format similar to popular [battle royale](https://en.wikipedia.org/wiki/Battle_royal) games. 
+TriviaRoyale is an application that lets users play trivia games with others in a format similar to popular [battle royale](https://en.wikipedia.org/wiki/Battle_royal) games. 
 
 ## Who?
 The specific target audience for this project are those that heavily enjoy trivia games, who are also looking to both show off and advance their knowledge in specific areas. We envision that those who want to put their knowledge to the test by competing against others in a fast-paced and challenging setting would be the ones most likely to use our application.
@@ -25,13 +24,12 @@ As developers, this application is not only an opportunity to show off our skill
 
 | Priority | User                 | Description                                                                                   | Implementation                                                                                                                                                                                                                                                 |
 |----------|----------------------|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| P0       | As a user            | I want to create a new account with Trivia Roulette to play with others and track my progress | Upon receiving a  **POST request to /v1/users** , UsersHandler will validate and insert a new user into the user store. UsersHandler will then begin a session for the new user in the session store                                                               |
-| P1       | As a registered user | I want to join a game and play against others players                                         | Upon recieivng a  **POST request to /v1/trivia/{triviaID}**,  the trivia microservice adds the authenticated user to the state of the desired game lobby                                                                                                           |
-| P1       | As a group of users  | I want to submit an answer to a question within a game                                        | After receiving a  **GET request to /v1/trivia/answer**,  containing a json list of users and their answers,   the trivia microservice will determine which of the answers are correct, and respond with the list of users and whether or not they were correct.   |
-| P2       | As a registered user | I want my statistics to be recorded after each game                                           | Upon receiving a  **POST request to /v1/users/{userID}**,  with a json object containing the number of correct answers, whether or not they won, and how many points they received for the game, and StatsHandler will insert that information into UserStatistics |
-| P3       | As a registered user | I want to view my statistics, or another player’s statistics                                  | Upon receiving a  **GET request to /v1/users/{userID}**,  StatsHandler will query the UserStatistics table for each with provided userID, and return a json object containing the sum for each statistic category                                                  |
-| P2       | As a registered user | I want to send chat messages to other players in my game                                      | Upon receiving a  **POST request to /v1/trivia/{triviaID}/messages**,  the messaging microservice will insert the message body and the associated triviaID into the Message table                                                                                  |
-| P2       | As a registered user | I want to view chat messages sent by other players in my game                                 | Upon receiving a  GET request to **/v1/trivia/{triviaID}/messages**,  the messaging microservice will respond with a list of all the messages for that game                                                                                                        |
+| P0       | As a user            | I want to create a new account with Trivia Royale to play with others and track my progress | Upon receiving a  **POST request to /v1/users** , UsersHandler will validate and insert a new user into the user store. UsersHandler will then begin a session for the new user in the session store                                                               |
+| P1       | As a registered user | I want to join a game and play against others players                                         | Upon recieivng a  **POST request to /v1/trivia/{triviaID}?type=add**,  the trivia microservice adds the authenticated user to the state of the desired game lobby                                                                                                           |
+| P1       | As a user | I want to submit an answer to a question within a game                                        | After receiving a  **POST request to /v1/trivia/{triviaID}?type=answer**,  containing a json object with the users answer,   the trivia microservice will add that to the list of answers for a specific question in the game, for later evaluation   |
+| P2       | As a registered user | I want to access my statistics                                          | Upon calling the  **GET request to /v1/trivia/user/{userID}**, the user will get a json object containing the games played, points received, and number of wins |                                                 |
+| P2       | As a registered user | I want to send chat messages to other players                                     | Upon receiving a  **POST request to /v1/channels/{channelID}**,  the messaging microservice will insert the message body into the general chat bar in the trivia microservice                                                                                  |
+| P2       | As a registered user | I want to view chat messages sent by other players in my game                                 | When a message is posted to the message microservice it will post the message to RabbitMQ and be displayed on the trivia microservice                                                                                                   |
 
 
 ## Schemas
