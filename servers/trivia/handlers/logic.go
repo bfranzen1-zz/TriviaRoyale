@@ -5,6 +5,7 @@ import (
 	t "github.com/TriviaRoulette/servers/trivia/models/trivia"
 	"github.com/TriviaRoulette/servers/trivia/models/users"
 	"gopkg.in/mgo.v2/bson"
+	"sync"
 	"time"
 )
 
@@ -23,6 +24,7 @@ type Lobby struct {
 	Creator    *users.User   `json:"creator" bson:"creator"`
 	Over       bool          `json:"over" bson:"over"`
 	InProgress bool          `json:"inProgress" bson:"in_progress"`
+	lock       sync.Mutex
 }
 
 // Options stores information that defines how a game will be structured
@@ -56,6 +58,8 @@ type UserStatistic struct {
 	- remove lobby from context
 */
 
+// StartGame starts the game using the information in the passed lob lobby
+// it is called by a go routine and sends questions to players at timed intervals
 func (ctx *TriviaContext) StartGame(lob *Lobby) {
 	// TODO: start go routine for specific lobby questions
 	lob.InProgress = true
@@ -66,22 +70,31 @@ func (ctx *TriviaContext) StartGame(lob *Lobby) {
 	}
 	ctx.PublishData(start)
 	for i, q := range lob.State.Questions {
+		if len(lob.State.Players) <= 1 { // all players gone/there is a winner before end of questions
+			ctx.handleAnswers(&q, true, lob)
+			break
+		}
 		q.SentAt = time.Now().UTC()
-		ctx.PublishData(q)
+		e := TriviaMessage{
+			Type:     "game-question",
+			UserIDs:  lob.State.Players,
+			Question: q,
+			LobbyID:  lob.LobbyID,
+		}
+		ctx.PublishData(e)
 		switch lob.Options.Difficulty {
 		case "easy":
-			time.Sleep(31 * time.Second)
+			time.Sleep(33 * time.Second)
 		case "medium":
-			time.Sleep(21 * time.Second)
+			time.Sleep(23 * time.Second)
 		case "hard":
-			time.Sleep(11 * time.Second)
+			time.Sleep(13 * time.Second)
 		}
 		if i != len(lob.State.Questions)-1 {
 			ctx.handleAnswers(&q, false, lob)
 		} else {
 			ctx.handleAnswers(&q, true, lob)
 		}
-
 	}
 }
 
@@ -111,6 +124,14 @@ func (ctx *TriviaContext) SaveResults(id int64, over bool, lob *Lobby, currQ int
 }
 
 func (ctx *TriviaContext) handleAnswers(q *t.Question, end bool, lob *Lobby) {
+	if end {
+		for _, p := range lob.State.Players {
+			ctx.SaveResults(p, true, lob, q.QuestionID)
+			ctx.kickUser(p, true, lob)
+		}
+		return
+	}
+
 	ans := lob.State.Answers[q.QuestionID]
 	if len(ans) != len(lob.State.Players) { // check if all players responded in time
 		for _, p := range lob.State.Players {
@@ -124,13 +145,6 @@ func (ctx *TriviaContext) handleAnswers(q *t.Question, end bool, lob *Lobby) {
 		if ok := checkAnswer(&a, q); !ok {
 			ctx.SaveResults(a.UserID, false, lob, q.QuestionID)
 			ctx.kickUser(a.UserID, false, lob)
-		}
-	}
-
-	if end {
-		for _, p := range lob.State.Players {
-			ctx.SaveResults(p, true, lob, q.QuestionID)
-			ctx.kickUser(p, true, lob)
 		}
 	}
 }
@@ -167,10 +181,10 @@ func checkPlayer(slice []t.Answer, id int64) bool {
 }
 
 func checkAnswer(ans *t.Answer, q *t.Question) bool {
-	if ans.Answer != q.Answer {
-		return false
+	if ans.Answer == q.Answer {
+		return true
 	}
-	return true
+	return false
 }
 
 // remove removes the id from the slice of IDs 's' and returns

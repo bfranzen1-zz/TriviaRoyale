@@ -85,6 +85,7 @@ func (s *SocketStore) RemoveConnection(id int64) {
 // (if the message is intended for a private channel), or to all of them (if the message
 // is posted on a public channel
 func (s *SocketStore) WriteToValidConnections(userIDs []int64, messageType int, data []byte) error {
+	fmt.Println("Number of users to send to: %d", len(userIDs))
 	var writeError error
 	if len(userIDs) > 0 { // private channel
 		for _, id := range userIDs {
@@ -211,8 +212,12 @@ func (s *SocketStore) Read(events <-chan amqp.Delivery) {
 			fmt.Printf("error getting message body, %v", err)
 			break
 		}
-		if event["UserIDs"] != nil {
-			s.WriteToValidConnections(event["UserIDs"].([]int64), TextMessage, e.Body)
+		if event["userIDs"] != nil {
+			ids := make([]int64, len(event["userIDs"].([]interface{})))
+			for i, v := range event["userIDs"].([]interface{}) {
+				ids[i] = int64(v.(float64))
+			}
+			s.WriteToValidConnections(ids, TextMessage, e.Body)
 		} else {
 			s.WriteToValidConnections([]int64{}, TextMessage, e.Body)
 		}

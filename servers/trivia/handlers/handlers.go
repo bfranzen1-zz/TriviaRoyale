@@ -9,6 +9,7 @@ import (
 	"github.com/streadway/amqp"
 	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -26,11 +27,12 @@ const (
 // TriviaMessage is a struct that holds
 // information about the parts of the trivia service
 type TriviaMessage struct {
-	Type     string     `json:"type"`
-	Lobby    *Lobby     `json:"lobby,omitempty"`
-	Options  Options    `json:"options,omitempty"`
-	Question t.Question `json:"question,omitempty"`
-	UserIDs  []int64    `json:"userIDs,omitempty"`
+	Type     string        `json:"type"`
+	LobbyID  bson.ObjectId `json:"lobbyID,omitempty"`
+	Lobby    *Lobby        `json:"lobby,omitempty"`
+	Options  Options       `json:"options,omitempty"`
+	Question t.Question    `json:"question,omitempty"`
+	UserIDs  []int64       `json:"userIDs,omitempty"`
 }
 
 // LobbyHandler handles when the client creates a new lobby for
@@ -71,14 +73,16 @@ func (ctx *TriviaContext) LobbyHandler(w http.ResponseWriter, r *http.Request) {
 			Over:       false,
 			InProgress: false,
 		}
+		lob.lock.Lock()
 		lob.State.Players = append(lob.State.Players, player.ID)
+		lob.lock.Unlock()
 		if !checkOptions(lob.Options) { // ensure valid options
 			http.Error(w, "Bad Request", 400)
 			return
 		}
 
 		if err := ctx.Mongo.Insert(lob, "game"); err != nil {
-			fmt.Println("error inserting record, %v", err)
+			fmt.Printf("error inserting record, %v", err)
 		}
 		ctx.Lobbies[lob.LobbyID] = lob
 		e := TriviaMessage{
@@ -129,9 +133,20 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 		reqType := r.URL.Query().Get("type")
 		if reqType == "add" { // user asking to join lobby
 			lob := ctx.Lobbies[bson.ObjectIdHex(lid)]
-			lob.State.Players = append(lob.State.Players, player.ID)
+			if len(lob.State.Players) < int(lob.Options.MaxPlayers) {
+				lob.lock.Lock()
+				lob.State.Players = append(lob.State.Players, player.ID)
+				lob.lock.Unlock()
+				// got all the players we want
+				if len(lob.State.Players) == int(lob.Options.MaxPlayers) {
+					go ctx.StartGame(lob)
+				}
+			} else { // max players reached
+				http.Error(w, "Bad Request", 400)
+				return
+			}
 			if err := ctx.Mongo.Update(lob.LobbyID, "game", bson.M{"$set": bson.M{"state": lob.State}}); err != nil {
-				fmt.Println("error updating record, %v", err)
+				fmt.Printf("error updating record, %v", err)
 			}
 			e := TriviaMessage{
 				Type:    "lobby-add",
@@ -159,17 +174,20 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 				return
 			}
 			if bson.ObjectIdHex(lid) != dest.LobbyID {
-				fmt.Printf("format error, request id for lobby was %d, answer contained %d", lid, dest.LobbyID)
+				fmt.Printf("format error, request id for lobby was %s, answer contained %s", lid, dest.LobbyID)
 			}
 			if !ctx.Lobbies[dest.LobbyID].InProgress { // game hasn't started yet
 				http.Error(w, "Bad Request", 400)
 				return
 			}
-			ans := ctx.Lobbies[dest.LobbyID].State.Answers[dest.QuestionID]
-			ans = append(ans, dest)
 			lob := ctx.Lobbies[dest.LobbyID]
+			lob.lock.Lock()
+			lob.State.Answers[dest.QuestionID] = append(lob.State.Answers[dest.QuestionID], dest)
+			lob.lock.Unlock()
+			fmt.Println("APPENDED ANSWER")
+			fmt.Printf("ANSWERS: %v", lob.State.Answers[dest.QuestionID])
 			if err := ctx.Mongo.Update(lob.LobbyID, "game", bson.M{"$set": bson.M{"state": lob.State}}); err != nil {
-				fmt.Println("error updating record, %v", err)
+				fmt.Printf("error updating record, %v", err)
 			}
 			w.Header().Set("Content-Type", "text/html")
 			w.WriteHeader(200)
@@ -273,6 +291,10 @@ func formatState(data []byte) *GameState {
 			s[i] = fmt.Sprint(v)
 		}
 		nxt.Choices = s
+		nxt.Choices = append(nxt.Choices, row["correct_answer"].(string))
+		rand.Shuffle(len(nxt.Choices), func(i, j int) { // shuffle choices, so answer not obvious
+			nxt.Choices[i], nxt.Choices[j] = nxt.Choices[j], nxt.Choices[i]
+		})
 		nxt.Answer = row["correct_answer"].(string)
 		state.Questions = append(state.Questions, nxt)
 	}
@@ -286,7 +308,7 @@ func (ctx *TriviaContext) PublishData(data interface{}) {
 
 	queue, err := ctx.Channel.QueueDeclare(qName, true, false, false, false, nil)
 	if err != nil {
-		fmt.Errorf("error declaring queue, %v", err)
+		fmt.Printf("error declaring queue, %v", err)
 	}
 
 	err = ctx.Channel.Publish(
@@ -299,13 +321,14 @@ func (ctx *TriviaContext) PublishData(data interface{}) {
 			Body:        []byte(body),
 		})
 	if err != nil {
-		fmt.Errorf("error publish to queue, %v", err)
+		fmt.Printf("error publish to queue, %v", err)
 	}
 }
 
 // checkOptions ensures the passed opt options are valid and returns a boolean
 // representing such
 func checkOptions(opt *Options) bool {
+	fmt.Println(opt.Category)
 	if opt.Category < 9 {
 		fmt.Println("invalid category, less than 9")
 		return false
