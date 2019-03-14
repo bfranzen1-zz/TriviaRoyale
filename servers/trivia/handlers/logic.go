@@ -116,7 +116,7 @@ func (ctx *TriviaContext) SaveResults(id int64, over bool, lob *Lobby, currQ int
 	if over {
 		stat.Points = 10 + ((currQ - 1) * (diff / int64(len(lob.State.Players))))
 	} else {
-		stat.Points = 1 + ((currQ - 1) * (diff / int64(len(lob.State.Players))))
+		stat.Points = 1 + ((currQ - 1) * (diff / (int64(len(lob.State.Players)) + 1)))
 	}
 	if err := ctx.Mongo.Insert(stat, "user_stats"); err != nil {
 		fmt.Printf("error inserting record, %v", err)
