@@ -30,6 +30,7 @@ func main() {
 	msg := strings.Split(os.Getenv("MESSAGESADDR"), ",")
 	// for final project
 	triv := strings.Split(os.Getenv("TRIVADDR"), ",")
+	// not := strings.Split(os.Getenv("NOTIFYADDR"), ",")
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -73,14 +74,17 @@ func main() {
 
 	msgProxy := &httputil.ReverseProxy{Director: CustomDirectorRR(msg, &hc)}
 	trivProxy := &httputil.ReverseProxy{Director: CustomDirectorRR(triv, &hc)}
+	// notProxy := &httputil.ReverseProxy{Director: CustomDirectorRR(not, &hc)}
 
 	mux := http.NewServeMux()
+	// mux.Handle("/v1/ws", notProxy)
 	mux.HandleFunc("/v1/ws", hc.WebSocketConnectionHandler)
 	mux.Handle("/v1/channels", msgProxy)
 	mux.Handle("/v1/channels/", msgProxy)
 	mux.Handle("/v1/messages/", msgProxy)
 	mux.Handle("/v1/trivia", trivProxy)
 	mux.Handle("/v1/trivia/", trivProxy)
+	mux.Handle("/v1/trivia/user/", trivProxy)
 	mux.HandleFunc("/v1/users", hc.UsersHandler)
 	mux.HandleFunc("/v1/users/", hc.SpecificUserHandler)
 	mux.HandleFunc("/v1/sessions", hc.SessionsHandler)

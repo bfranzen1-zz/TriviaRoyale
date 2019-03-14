@@ -54,6 +54,7 @@ func main() {
 
 	mux.HandleFunc("/v1/trivia", ctx.LobbyHandler)
 	mux.HandleFunc("/v1/trivia/", ctx.SpecificLobbyHandler)
+	mux.HandleFunc("/v1/trivia/user/", ctx.StatisticsHandler)
 
 	log.Printf("Server is listening at http:/trivia/%s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))

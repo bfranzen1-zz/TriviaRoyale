@@ -40,6 +40,7 @@ type TriviaMessage struct {
 func (ctx *TriviaContext) LobbyHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("X-User") == "" {
 		http.Error(w, "Unauthorized Access", 401)
+		return
 	}
 
 	player := users.User{}
@@ -185,8 +186,6 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 			lob.lock.Lock()
 			lob.State.Answers[dest.QuestionID] = append(lob.State.Answers[dest.QuestionID], dest)
 			lob.lock.Unlock()
-			fmt.Println("APPENDED ANSWER")
-			fmt.Printf("ANSWERS: %v", lob.State.Answers[dest.QuestionID])
 			if err := ctx.Mongo.Update(lob.LobbyID, "game", bson.M{"$set": bson.M{"state": lob.State}}); err != nil {
 				fmt.Printf("error updating record, %v", err)
 			}
@@ -231,6 +230,33 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 		}
 	} else {
 		http.Error(w, "Method Not Allowed", 405)
+		return
+	}
+}
+
+// StatisticsHandler handles when a client requests user statistics
+func (ctx *TriviaContext) StatisticsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("X-User") == "" {
+		http.Error(w, "Unauthorized Access", 401)
+		return
+	}
+
+	player := users.User{}
+	if err := json.Unmarshal([]byte(r.Header.Get("X-User")), &player); err != nil {
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	var dest []UserStatistic
+	if err := ctx.Mongo.GetUserStat(player.ID, dest); err != nil {
+		// no rows in mongo
+		http.Error(w, "Bad Request", 400)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(dest); err != nil {
+		fmt.Printf("Error encoding to JSON: %v", err)
 		return
 	}
 }
@@ -335,7 +361,6 @@ func (ctx *TriviaContext) PublishData(data interface{}) {
 // checkOptions ensures the passed opt options are valid and returns a boolean
 // representing such
 func checkOptions(opt *Options) bool {
-	fmt.Println(opt.Category)
 	if opt.Category < 9 {
 		fmt.Println("invalid category, less than 9")
 		return false

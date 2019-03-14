@@ -75,3 +75,10 @@ func (ms *MongoStore) Delete(id bson.ObjectId, coll string) error {
 
 	return nil
 }
+
+// GetUserStat gets all the user statistic documents related to the user id and puts it in the
+// destination interface. An error is returned if the query fails
+func (ms *MongoStore) GetUserStat(id int64, dest interface{}) error {
+	c := ms.ses.DB("game").C("user_stat")
+	return c.Find(bson.M{"userId": id}).All(&dest)
+}

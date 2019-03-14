@@ -74,7 +74,7 @@ docker run -d \
 -e REDISADDR=red:6379 \
 -e DSN=\$DSN \
 -e MESSAGESADDR=msg:5000 \
--e RABBITMQ=rmq:5672 \
 -e TRIVADDR=trivia:8000 \
+-e RABBITMQ=rmq:5672 \
 bfranzen1/trivia.bfranzen.me;
 "

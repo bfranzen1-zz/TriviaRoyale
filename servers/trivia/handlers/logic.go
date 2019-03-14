@@ -83,6 +83,7 @@ func (ctx *TriviaContext) StartGame(lob *Lobby) {
 		}
 		ctx.PublishData(e)
 		switch lob.Options.Difficulty {
+		// offset time to account for delivery
 		case "easy":
 			time.Sleep(33 * time.Second)
 		case "medium":
@@ -114,7 +115,7 @@ func (ctx *TriviaContext) SaveResults(id int64, over bool, lob *Lobby, currQ int
 		Won:     over,
 	}
 	if over {
-		stat.Points = 10 + ((currQ - 1) * (diff / int64(len(lob.State.Players))))
+		stat.Points = 10 + ((currQ - 1) * (diff / (int64(len(lob.State.Players)) + 1)))
 	} else {
 		stat.Points = 1 + ((currQ - 1) * (diff / (int64(len(lob.State.Players)) + 1)))
 	}
