@@ -221,6 +221,10 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 			UserIDs: []int64{},
 		}
 		ctx.PublishData(e)
+		// update makes max players == num players in lobby, need to start game
+		if int(opt.MaxPlayers) == len(ctx.Lobbies[bson.ObjectIdHex(lid)].State.Players) {
+			go ctx.StartGame(ctx.Lobbies[bson.ObjectIdHex(lid)])
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		enc := json.NewEncoder(w)

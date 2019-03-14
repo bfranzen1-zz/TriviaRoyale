@@ -7,6 +7,7 @@ import (
 	"os"
 )
 
+// microservice that handles websockets for an api
 func main() {
 	addr := os.Getenv("ADDR")
 	tlscert := os.Getenv("TLSCERT")
