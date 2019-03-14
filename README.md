@@ -18,7 +18,7 @@ As developers, this application is not only an opportunity to show off our skill
 
 ## Architecture
 
-![architecture diagram](images/image1.jpg)
+![architecture diagram](images/image1.jpeg)
 
 ## User Stories
 
