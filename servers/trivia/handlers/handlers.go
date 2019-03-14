@@ -129,6 +129,7 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 				return
 			}
 		}
+		w.WriteHeader(200)
 	} else if r.Method == "POST" { // add user
 		reqType := r.URL.Query().Get("type")
 		if reqType == "add" { // user asking to join lobby
@@ -199,6 +200,12 @@ func (ctx *TriviaContext) SpecificLobbyHandler(w http.ResponseWriter, r *http.Re
 			http.Error(w, "Bad Request", 400)
 			return
 		}
+		// player is not creator
+		if ctx.Lobbies[bson.ObjectIdHex(lid)].Creator.ID != player.ID {
+			http.Error(w, "Unauthorized Access", 401)
+			return
+		}
+
 		var opt Options
 		mapstructure.Decode(j, &opt)
 

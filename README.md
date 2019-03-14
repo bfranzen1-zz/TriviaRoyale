@@ -14,7 +14,7 @@ The specific target audience for this project are those that heavily enjoy trivi
 
 ## Why?
 Despite the massive player base of Battle Royale video games, they are still missing the market of those that simply do not enjoy video games. Because the desire to compete and receive the satisfaction of being number one out of a large group of people is not solely found in people who enjoy video games, people would want to use our application to get that outlet they can’t find elsewhere. If you are someone who enjoys trivia, whether it be by watching game shows or partaking in it themselves, or even just want to be able to show off how smart you are, you would be given the opportunity to measure your skills against others while also improving your own knowledge. 
-As developers, this application is not only an opportunity to show off our skill set learned during the course but to also push the boundaries of our understanding of concepts. We hope that it will also introduce us to new technologies and services to broaden the scope of our knowledge as well. Most of all, we wanted to build a fun and engaging application to share with others. 
+As developers, this application is not only an opportunity to show off our skill set learned during the course but to also push the boundaries of our understanding of concepts. We hope that it will also introduce us to new technologies and services to broaden the scope of our knowledge. Most of all, we wanted to build a fun and engaging application to share with others. 
 
 ## Architecture
 
@@ -37,46 +37,75 @@ As developers, this application is not only an opportunity to show off our skill
 ![database structure](images/image4.jpg)
 
 ## Endpoints 
-The trivia microservice will handle the state of the game. The state will include a list of questions to ask and the users currently in the game. The service will generate a set of questions to ask users based on the API we are pulling from. After each question is answered by users in the alloted time those that didn’t answer correctly will be removed from the game. 
+The trivia microservice will handle the state of the game. The state will include a list of questions to ask and the users currently in the game. The service will generate a set of questions to ask users based on the API we are pulling from. After each question is answered by users in the alloted time those that didn’t answer correctly, or in time, will be removed from the game. 
+
+GAME LOGIC
+- On game start, a go routine is initiatied that sends questions periodically depending on the difficulty set for the game. 
+    - the questions are sent to the RabbitMQ service which posts "game-question" messages containing a question struct to all users that are players in the lobby 
+- After a period of waiting the server checks that answers provided by users and removes those that didn't answer in time or got the wrong answer. 
+- The game has ended when there is either one user left or there are no more questions to answer. When the game ends or a user loses they are kicked from the lobby and their statistics for the game are saved. 
+    - a message is sent to the Rabbit queue "game-over" or "game-won" and contains the lobby state at that point in time
+- Points are awarded for correct answers and the situation in which someone won (number of players left and difficulty)
 
 POST /v1/users
-- Given a json object containing user information, including email, password, first name, last name, user name, and a photoURL, inserts the user into the user store
+- Given a json object containing user information, including email, password, first name, last name, and user name, inserts the user into the user store
 - Returns the newly inserted user, along with their ID
 - Creates a session for the newly inserted user in the session store
+- Requires a JSON object with:
+    - string first name of user
+    - string last name of user 
+    - string email of user
+    - string password of user
+    - string passwordconf of user
+- 400 errors are returned if invalid data is sent
+- 201 is returned on success
+
+TRIVIA MICROSERVICE 
+- 401 errors are returned if at any point a user is not authenticated 
 
 
-GET /v1/users/{userID}
-- Given a userID, will return the user name and statistics for that specific userID 
-
-POST /v1/user/{userID}
-- Adds user game statistics to UserStatistics table after a game has been completed
+GET /v1/trivia
+- If the user is authenticated it gets a json object containing an array of active lobbies
+- 401 error returned if user not authenticated
+- 200 on success
 
 POST /v1/trivia
-- Insert a new trivia game into the trivia microservice
+- Insert a new trivia game into the trivia microservice with the passed options encoded in a json object if the user is authenticated
+- Requires JSON object with:
+    - an int representing the number of questions 
+    - an int representing the max players to allow
+    - an int representing the category to select
+    - a string representing the difficulty (easy, medium, hard)
+- 400 is returned if data is invalid
+- a 200 is returned on success 
+    - additionally, a message is sent to the RabbitMQ type "lobby-new" containing the new lobby struct
 
-POST /v1/trivia/{triviaID}
+GET /v1/trivia/{triviaID}
+- the authenticated creator of the lobby wants to start the game
+- go routine is initiated that starts game and handles state
+- a 200 status is returned if the start succeeded 
+
+POST /v1/trivia/{triviaID}?type=
+- checks if user is authenticated
 - Add user to lobby
 - Upgrade to websocket to send questions
-- Start game if time runs out on lobby waiting
+- Start game if the max players is reached or the creator starts the game
+- if the type query is set to add it will add the user to the lobby, if it's answer it will submit the answer to the current question in the lobby
+- if the added user makes the lobby full the game is started
+- a 201 status is returned on success
+    - additionally, a message is sent to the RabbitMQ type "lobby-add" containing the new lobby struct and userIds 
 
-GET /v1/trivia/{triviaID}/answer
-- User sends answer to question
-- Game state updated
-- If answer incorrect user removed from state
-- Send user result of answer
+PATCH /v1/trivia/{triviaID}
+- checks if user is the creator of the lobby and is authenticated
+- changes the settings of the lobbies using the passed options encoded as json
+- Requires JSON object with:
+    - an int representing the number of questions 
+    - an int representing the max players to allow
+    - an int representing the category to select
+    - a string representing the difficulty (easy, medium, hard)
+- a 400 is returned if the data is invalid
+- a 200 is returned on success
+    - additionally, a message is sent to the RabbitMQ type "lobby-update" containing the new lobby struct
 
-POST /v1/trivia/{triviaID}/messages
-- Inserts the message body and the creator of the message into the messaging microservice
-
-GET /v1/trivia/{triviaID}/message
-- Returns all messages for the request trivia game, along with their creators
-
-POST /v1/sessions
-- Validate and insert the provided user into the session store
-
-DELETE /v1/sessions
-- Remove the provided user from the session store
-
-
-We will also utilize the API endpoints we defined in assignments throughout the quarter for signing users up, storing session information for active users, and sending/receiving messages. 
+We will also utilize the API endpoints we defined in assignments throughout the quarter for signing users up, storing session information for active users, and sending/receiving messages via websockets. 
 
