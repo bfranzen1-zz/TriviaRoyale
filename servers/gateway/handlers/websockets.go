@@ -89,7 +89,9 @@ func (s *SocketStore) WriteToValidConnections(userIDs []int64, messageType int, 
 	var writeError error
 	if len(userIDs) > 0 { // private channel
 		for _, id := range userIDs {
-			writeError = s.Connections[id].WriteMessage(messageType, data)
+			if val, ok := s.Connections[id]; ok {
+				writeError = val.WriteMessage(messageType, data)
+			}
 			if writeError != nil {
 				return writeError
 			}
